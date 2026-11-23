@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M.4 Tutor MOOC - ติวเข้มเข้า ม.4</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- 1. ดึง SDK Supabase มาใช้งาน -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f8f9fa; }
+        .hero-section { background: linear-gradient(135deg, #2563eb 0%, #0d6efd 100%); color: white; padding: 80px 0; text-align: center; }
+        .subject-card { transition: transform 0.3s; cursor: pointer; border: none; background: white; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .subject-card:hover { transform: translateY(-5px); background-color: #f0f8ff; }
+        .subject-icon { font-size: 3rem; margin-bottom: 15px; }
+        .card-link { text-decoration: none; color: inherit; display: block; height: 100%; }
+        .nav-tabs .nav-link { color: #6c757d; font-weight: 600; border: none; border-bottom: 2px solid transparent; }
+        .nav-tabs .nav-link.active { color: #2563eb; border-bottom: 2px solid #2563eb; background: none; }
+
+        /* ปุ่ม User Profile แบบวงรีขอบสีฟ้า */
+        .user-dropdown-btn {
+            border: 1.5px solid #0d6efd;
+            color: #0d6efd;
+            background-color: #ffffff;
+            border-radius: 50rem;
+            padding: 5px 16px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .user-dropdown-btn:hover, 
+        .user-dropdown-btn:focus,
+        .user-dropdown-btn[aria-expanded="true"] {
+            background-color: #f0f7ff;
+            color: #0d6efd;
+            border-color: #0d6efd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="index.html"><i class="fas fa-book-reader"></i> M.4 PREP</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <form class="d-flex mx-auto w-50">
+                    <input class="form-control me-2 rounded-pill" type="search" placeholder="ค้นหาข้อสอบ หรือ บทความ..." aria-label="Search">
+                    <button class="btn btn-outline-primary rounded-pill" type="submit"><i class="fas fa-search"></i></button>
+                </form>
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link restricted-link" href="summary.html">สรุปเนื้อหา&คลังข้อสอบ</a></li>
+                    <li class="nav-item ms-2" id="authNavContainer">
+                        <!-- ปุ่มจะแสดงตามสถานะผู้ใช้ผ่าน JavaScript -->
+                        <button class="btn btn-primary btn-sm rounded-pill px-4 mt-1" data-bs-toggle="modal" data-bs-target="#authModal">เข้าสู่ระบบ / สมัครสมาชิก</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Hero Section -->
+    <header class="hero-section">
+        <div class="container">
+            <h1 class="display-4 fw-bold">ฝึกทำโจทย์ & อ่านสรุปเข้ม</h1>
+            <p class="lead mb-4">คลังข้อสอบเสมือนจริงและ Short Note สรุปเนื้อหา พร้อมสอบเข้า ม.4</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="#subjects" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-primary restricted-link">เริ่มทำข้อสอบ</a>
+                <a href="summary.html" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold restricted-link">อ่านสรุป</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Subject Section -->
+    <section class="container my-5" id="subjects">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold">เลือกวิชาที่ต้องการฝึก</h2>
+            <p class="text-muted">แยกตามรายวิชาหลัก เพื่อการโฟกัสที่ตรงจุด</p>
+        </div>
+        <div class="row g-4 justify-content-center">
+            <div class="col-6 col-md-2">
+                <a href="learning/math/math.html" class="card-link restricted-link">
+                    <div class="card subject-card py-4 text-center h-100 rounded-4">
+                        <div class="text-primary subject-icon"><i class="fas fa-calculator"></i></div>
+                        <h5 class="fw-bold">คณิตศาสตร์</h5>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="learning/science/science.html" class="card-link restricted-link">
+                    <div class="card subject-card py-4 text-center h-100 rounded-4">
+                        <div class="text-success subject-icon"><i class="fas fa-flask"></i></div>
+                        <h5 class="fw-bold">วิทยาศาสตร์</h5> 
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="learning/english/english.html" class="card-link restricted-link">
+                    <div class="card subject-card py-4 text-center h-100 rounded-4">
+                        <div class="text-danger subject-icon"><i class="fas fa-language"></i></div>
+                        <h5 class="fw-bold">ภาษาอังกฤษ</h5>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="learning/thai/thai.html" class="card-link restricted-link">
+                    <div class="card subject-card py-4 text-center h-100 rounded-4">
+                        <div class="text-warning subject-icon"><i class="fas fa-book-open"></i></div>
+                        <h5 class="fw-bold">ภาษาไทย</h5>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="learning/society/society.html" class="card-link restricted-link">
+                    <div class="card subject-card py-4 text-center h-100 rounded-4">
+                        <div class="text-info subject-icon"><i class="fas fa-globe-asia"></i></div>
+                        <h5 class="fw-bold">สังคมศึกษา</h5>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact & Poster Section (ส่วนโปสเตอร์/ติดต่อเราด้านล่าง) -->
+    <section class="container my-5" id="contact-poster">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+            <div class="row g-0 align-items-center">
+                <div class="col-md-6 bg-primary text-white p-4 p-md-5 text-center text-md-start">
+                    <span class="badge bg-white text-primary rounded-pill px-3 py-2 mb-3 fw-bold">สอบถามข้อมูลเพิ่มเติม</span>
+                    <h3 class="fw-bold mb-3">ติดปัญหาการใช้งาน หรือมีข้อสงสัย?</h3>
+                    <p class="mb-4 opacity-75">ทีมงานพร้อมให้คำแนะนำเกี่ยวกับคลังข้อสอบ บทเรียน และระบบการใช้งานตลอด 24 ชม.</p>
+                    <div class="d-flex flex-column gap-3 fs-6">
+                        <div><i class="fas fa-envelope me-2"></i> contact@m4prep.com</div>
+                        <div><i class="fab fa-line me-2"></i> @m4prep_official</div>
+                        <div><i class="fas fa-phone-alt me-2"></i> 02-123-4567</div>
+                    </div>
+                </div>
+                <div class="col-md-6 p-4 p-md-5 text-center">
+                    <div class="p-4 border border-2 border-dashed rounded-4 bg-light">
+                        <i class="fas fa-bullhorn text-primary fa-3x mb-3"></i>
+                        <h5 class="fw-bold mb-2">โปสเตอร์ข่าวสาร & ติวฟรี</h5>
+                        <p class="text-muted small mb-4">อัปเดตข่าวสารการสอบเข้า ม.4 แนวข้อสอบใหม่ และกิจกรรมติวฟรีผ่านช่องทางโซเชียลมีเดีย</p>
+                        <a href="#" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                            <i class="fab fa-facebook me-2"></i>ติดตามแฟนเพจ M.4 Prep
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal เข้าสู่ระบบ / สมัครสมาชิก -->
+    <div class="modal fade" id="authModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 pt-2">
+                    <!-- แท็บสลับหน้า -->
+                    <ul class="nav nav-tabs justify-content-center mb-4" id="authTab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active fs-5" id="login-tab" data-bs-toggle="tab" data-bs-target="#login-pane">เข้าสู่ระบบ</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fs-5" id="register-tab" data-bs-toggle="tab" data-bs-target="#register-pane">สมัครสมาชิก</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="authTabContent">
+                        <!-- แท็บ 1: เข้าสู่ระบบ -->
+                        <div class="tab-pane fade show active" id="login-pane">
+                            <form class="text-start mb-3" onsubmit="performLogin(event)">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">อีเมล</label>
+                                    <input type="email" id="loginEmail" class="form-control rounded-pill" placeholder="name@example.com" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-bold">รหัสผ่าน</label>
+                                    <input type="password" id="loginPassword" class="form-control rounded-pill" placeholder="••••••••" required>
+                                </div>
+                                <button type="submit" id="btnLogin" class="btn btn-primary w-100 rounded-pill py-2 fw-bold mb-2">
+                                    เข้าสู่ระบบ
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- แท็บ 2: สมัครสมาชิก -->
+                        <div class="tab-pane fade" id="register-pane">
+                            <form class="text-start mb-3" onsubmit="performRegister(event)">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">อีเมลที่ใช้สมัคร</label>
+                                    <input type="email" id="regEmail" class="form-control rounded-pill" placeholder="name@example.com" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-bold">กำหนดรหัสผ่าน (อย่างน้อย 6 ตัว)</label>
+                                    <input type="password" id="regPassword" class="form-control rounded-pill" placeholder="••••••••" minlength="6" required>
+                                </div>
+                                <button type="submit" id="btnRegister" class="btn btn-success w-100 rounded-pill py-2 fw-bold mb-2">
+                                    ยืนยันการสมัครสมาชิก
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="position-relative my-4">
+                        <hr class="text-muted opacity-25">
+                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">หรือ</span>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-secondary w-100 rounded-pill py-2" onclick="continueAsGuest()">
+                        <i class="fas fa-user-secret me-2"></i>ทดลองเรียน (ไม่ต้องล็อกอิน)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal ยืนยันการออกจากระบบ -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-body text-center p-4">
+                    <div class="text-warning mb-3">
+                        <i class="fas fa-exclamation-circle fa-3x"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2" id="logoutModalLabel">ยืนยันการออกจากระบบ</h5>
+                    <p class="text-muted small mb-4">คุณต้องการออกจากระบบใช่หรือไม่?</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4 btn-sm fw-bold text-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="button" class="btn btn-danger rounded-pill px-4 btn-sm fw-bold" onclick="performLogout()">ยืนยัน</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white py-5 mt-5">
+        <div class="container text-center small text-secondary">
+            &copy; 2026 M.4 Prep Online. All rights reserved.
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const SUPABASE_URL = 'https://jykdmzhqrcdyulztcota.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_kz9-wHYTu0nTM6Lxoi1EGg_LgfrbPvB';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 📌 กำหนดอีเมลของแอดมินที่นี่
+        const ADMIN_EMAIL = 'admin@m4prep.com'; 
+
+        let targetUrl = null;
+        let authModal = null;
+        let logoutModal = null;
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const authModalElement = document.getElementById('authModal');
+            if (authModalElement) {
+                authModal = new bootstrap.Modal(authModalElement);
+            }
+
+            const logoutModalElement = document.getElementById('logoutModal');
+            if (logoutModalElement) {
+                logoutModal = new bootstrap.Modal(logoutModalElement);
+            }
+
+            // ตรวจสอบเซสชันปัจจุบันเมื่อโหลดหน้าเว็บ
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+            }
+            updateAuthUI();
+
+            // ติดตามการเปลี่ยนแปลงสถานะเข้าสู่ระบบ
+            _supabase.auth.onAuthStateChange((event, session) => {
+                currentUser = session ? session.user : null;
+                updateAuthUI();
+            });
+
+            // จัดการลิงก์จำกัดสิทธิ์ (ถ้ายังไม่ล็อกอิน ให้เด้ง Modal เข้าสู่ระบบเสมอ)
+            document.querySelectorAll('.restricted-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if (!currentUser) {
+                        e.preventDefault();
+                        targetUrl = this.getAttribute('href');
+                        authModal.show();
+                    }
+                });
+            });
+        });
+
+        // อัปเดต UI ส่วนของปุ่มเข้าสู่ระบบ/ผู้ใช้งาน
+        function updateAuthUI() {
+            const container = document.getElementById('authNavContainer');
+            if (!container) return;
+
+            const isGuest = localStorage.getItem('user_role') === 'guest';
+
+            if (currentUser) {
+                const isAdmin = currentUser.email === ADMIN_EMAIL;
+                const username = currentUser.email.split('@')[0];
+
+                container.innerHTML = `
+                    <div class="dropdown">
+                        <button class="user-dropdown-btn dropdown-toggle mt-1" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle fs-5"></i>
+                            <span>${username}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2" aria-labelledby="userDropdown">
+                            ${isAdmin ? '<li><a class="dropdown-item fw-bold text-primary" href="admin.html"><i class="fas fa-user-shield me-2"></i>ระบบแอดมิน</a></li><li><hr class="dropdown-divider"></li>' : ''}
+                            <li>
+                                <button class="dropdown-item text-danger py-2" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                `;
+            } else if (isGuest) {
+                container.innerHTML = `
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <span class="badge bg-secondary rounded-pill px-3 py-2"><i class="fas fa-user-secret me-1"></i> Guest</span>
+                        <button class="btn btn-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#authModal">เข้าสู่ระบบ</button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button class="btn btn-primary btn-sm rounded-pill px-4 mt-1" data-bs-toggle="modal" data-bs-target="#authModal">
+                        เข้าสู่ระบบ / สมัครสมาชิก
+                    </button>
+                `;
+            }
+        }
+
+        // 1. ฟังก์ชันล็อกอิน
+        async function performLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const btnLogin = document.getElementById('btnLogin');
+
+            btnLogin.disabled = true;
+            btnLogin.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>กำลังเข้าสู่ระบบ...';
+
+            try {
+                const { data, error } = await _supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                localStorage.removeItem('user_role'); // ลบสถานะ guest หากมี
+
+                if (data.user.email === ADMIN_EMAIL) {
+                    localStorage.setItem('user_role', 'admin');
+                    alert("เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับแอดมิน");
+                    window.location.href = 'admin.html';
+                } else {
+                    localStorage.setItem('user_role', 'user');
+                    localStorage.setItem('user_email', data.user.email);
+                    alert("เข้าสู่ระบบสำเร็จ!");
+                    if (authModal) authModal.hide();
+                    
+                    window.location.href = targetUrl || 'index.html';
+                }
+
+            } catch (err) {
+                alert("เข้าสู่ระบบไม่สำเร็จ: " + (err.message || "อีเมลหรือรหัสผ่านไม่ถูกต้อง"));
+            } finally {
+                btnLogin.disabled = false;
+                btnLogin.innerText = 'เข้าสู่ระบบ';
+            }
+        }
+
+        // 2. ฟังก์ชันสมัครสมาชิกใหม่สำหรับนักเรียน
+        async function performRegister(event) {
+            event.preventDefault();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const btnRegister = document.getElementById('btnRegister');
+
+            btnRegister.disabled = true;
+            btnRegister.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>กำลังลงทะเบียน...';
+
+            try {
+                const { data, error } = await _supabase.auth.signUp({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                alert("สมัครสมาชิกสำเร็จ! กรุณาล็อกอินเข้าใช้งาน");
+                document.getElementById('login-tab').click();
+                document.getElementById('loginEmail').value = email;
+
+            } catch (err) {
+                alert("สมัครสมาชิกไม่สำเร็จ: " + err.message);
+            } finally {
+                btnRegister.disabled = false;
+                btnRegister.innerText = 'ยืนยันการสมัครสมาชิก';
+            }
+        }
+
+        // 3. เข้าใช้งานแบบ Guest
+        function continueAsGuest() {
+            localStorage.setItem('user_role', 'guest');
+            if (authModal) authModal.hide();
+            window.location.href = targetUrl || 'index.html';
+        }
+
+        // 4. ออกจากระบบเมื่อกดยืนยันใน Modal
+        async function performLogout() {
+            try {
+                const modalElement = document.getElementById('logoutModal');
+                if (modalElement) {
+                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) modalInstance.hide();
+                }
+
+                await _supabase.auth.signOut();
+                localStorage.removeItem('user_role');
+                localStorage.removeItem('user_email');
+                
+                window.location.href = 'index.html';
+            } catch (err) {
+                console.error("Logout error:", err);
+                alert("เกิดข้อผิดพลาดในการออกจากระบบ");
+            }
+        }
+    </script>
+</body>
+
+</html>

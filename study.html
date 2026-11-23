@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เนื้อหาบทเรียนสรุป - M.4 PREP</title>
+
+    <!-- Google Fonts & Font Awesome & Bootstrap -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .study-header {
+            background: linear-gradient(135deg, #2563eb 0%, #0d6efd 100%); /* Default */
+            color: white;
+            padding: 40px 0 30px 0;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            transition: background 0.3s ease;
+        }
+
+        .content-card {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            padding: 35px;
+            margin-top: -30px;
+            border: none;
+        }
+
+        .badge-subject {
+            font-size: 0.85rem;
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        .content-body {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #2c3e50;
+            white-space: pre-line;
+        }
+
+        .content-body img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            margin: 15px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-box {
+            background-color: #f1f5f9;
+            border-radius: 16px;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="summary.html">
+                <i class="fas fa-book-reader me-2"></i>M.4 PREP
+            </a>
+            <button onclick="window.close()" class="btn btn-outline-secondary btn-sm rounded-pill">
+                <i class="fas fa-times me-1"></i>ปิดหน้านี้
+            </button>
+        </div>
+    </nav>
+
+    <!-- Header Section (เพิ่ม id="studyHeader") -->
+    <header class="study-header text-center" id="studyHeader">
+        <div class="container" id="headerContainer">
+            <div class="spinner-border text-light mb-2" role="status"></div>
+            <p class="mb-0 text-white-50">กำลังโหลดบทเรียน...</p>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="container mb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="content-card" id="mainContentCard">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-3 text-muted">กำลังดึงข้อมูลเนื้อหาบทเรียน...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Config Supabase
+        const SUPABASE_URL = 'https://jykdmzhqrcdyulztcota.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5a2RtemhxcmNkeXVsenRjb3RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTg0MjcsImV4cCI6MjEwNTM5NDQyN30.Cz7joFgrCPLFyAhKlUL9azLcExXsskUEoAUBd0yc99E';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // กำหนดธีมสีและ Gradient ของแต่ละวิชา
+        const subjectConfig = {
+            'math': { 
+                name: 'คณิตศาสตร์', 
+                badgeClass: 'bg-primary text-white', 
+                icon: 'fa-calculator', 
+                bgGradient: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' 
+            },
+            'science': { 
+                name: 'วิทยาศาสตร์', 
+                badgeClass: 'bg-success text-white', 
+                icon: 'fa-flask', 
+                bgGradient: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' 
+            },
+            'english': { 
+                name: 'ภาษาอังกฤษ', 
+                badgeClass: 'bg-danger text-white', 
+                icon: 'fa-language', 
+                bgGradient: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' 
+            },
+            'thai': { 
+                name: 'ภาษาไทย', 
+                badgeClass: 'bg-warning text-dark', 
+                icon: 'fa-book-open', 
+                bgGradient: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)' 
+            },
+            'society': { 
+                name: 'สังคมศึกษา', 
+                badgeClass: 'bg-info text-white', 
+                icon: 'fa-globe-asia', 
+                bgGradient: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)' 
+            },
+            'other': { 
+                name: 'วิชาทั่วไป', 
+                badgeClass: 'bg-secondary text-white', 
+                icon: 'fa-book', 
+                bgGradient: 'linear-gradient(135deg, #4b5563 0%, #374151 100%)' 
+            }
+        };
+
+        function getSubjectKey(course) {
+            if (!course) return 'other';
+
+            const fullText = [
+                course.subject,
+                course.category,
+                course.title,
+                course.name,
+                course.description
+            ].filter(Boolean).join(' ').toLowerCase();
+
+            if (
+                fullText.includes('วิทย์') || fullText.includes('วิทยาศาสตร์') || 
+                fullText.includes('ฟิสิกส์') || fullText.includes('เคมี') || 
+                fullText.includes('ชีว') || fullText.includes('ดาราศาสตร์') ||
+                fullText.includes('sci') || fullText.includes('physics') || 
+                fullText.includes('chem') || fullText.includes('bio')
+            ) {
+                return 'science';
+            }
+
+            if (
+                fullText.includes('คณิต') || fullText.includes('คณิตศาสตร์') || 
+                fullText.includes('พีชคณิต') || fullText.includes('เรขาคณิต') || 
+                fullText.includes('แคลคูลัส') || fullText.includes('math') || 
+                fullText.includes('calc') || fullText.includes('algebra')
+            ) {
+                return 'math';
+            }
+
+            if (
+                fullText.includes('อังกฤษ') || fullText.includes('ภาษาอังกฤษ') || 
+                fullText.includes('eng') || fullText.includes('english') || 
+                fullText.includes('grammar') || fullText.includes('vocab')
+            ) {
+                return 'english';
+            }
+
+            if (
+                fullText.includes('ไทย') || fullText.includes('ภาษาไทย') || 
+                fullText.includes('วรรณคดี') || fullText.includes('หลักภาษา') ||
+                fullText.includes('thai')
+            ) {
+                return 'thai';
+            }
+
+            if (
+                fullText.includes('สังคม') || fullText.includes('สังคมศึกษา') || 
+                fullText.includes('ประวัติศาสตร์') || fullText.includes('ภูมิศาสตร์') || 
+                fullText.includes('เศรษฐศาสตร์') || fullText.includes('หน้าที่พลเมือง') ||
+                fullText.includes('soc') || fullText.includes('society') || 
+                fullText.includes('history') || fullText.includes('geo')
+            ) {
+                return 'society';
+            }
+
+            return 'other';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCourseDetail();
+        });
+
+        async function loadCourseDetail() {
+            const params = new URLSearchParams(window.location.search);
+            const courseId = params.get('id');
+
+            if (!courseId) {
+                renderError('ไม่พบรหัสบทเรียน กรุณากลับไปเลือกบทเรียนใหม่อีกครั้ง');
+                return;
+            }
+
+            try {
+                const { data, error } = await _supabase
+                    .from('courses')
+                    .select('*')
+                    .eq('id', courseId)
+                    .single();
+
+                if (error || !data) {
+                    renderError('ไม่พบข้อมูลเนื้อหาบทเรียนนี้ในระบบ');
+                    return;
+                }
+
+                renderCourseUI(data);
+
+            } catch (err) {
+                console.error('Error fetching course:', err);
+                renderError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+            }
+        }
+
+        function renderCourseUI(course) {
+            const subKey = getSubjectKey(course);
+            const config = subjectConfig[subKey] || subjectConfig['other'];
+
+            // เปลี่ยนสีพื้นหลัง Header แถบบนตามวิชาจริง
+            const headerElem = document.getElementById('studyHeader');
+            if (headerElem) {
+                headerElem.style.background = config.bgGradient;
+            }
+
+            // Render ข้อความใน Header
+            document.getElementById('headerContainer').innerHTML = `
+                <span class="badge badge-subject ${config.badgeClass} mb-2">
+                    <i class="fas ${config.icon} me-1"></i>${config.name}
+                </span>
+                <h2 class="fw-bold mb-2">${course.title || course.name || 'ไม่มีชื่อบทเรียน'}</h2>
+                <p class="lead opacity-75 small mb-0">${course.description || ''}</p>
+            `;
+
+            const mainText = course.content || course.detail || course.body || course.summary || course.description || 'ยังไม่มีเนื้อหาในบทเรียนนี้';
+
+            let mediaHTML = '';
+
+            if (course.pdf_url || course.file_url) {
+                const fileLink = course.pdf_url || course.file_url;
+                mediaHTML += `
+                    <div class="action-box mb-4 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-pdf text-danger display-6 me-3"></i>
+                            <div>
+                                <h6 class="fw-bold mb-0">เอกสารประกอบการเรียน / Short Note PDF</h6>
+                                <small class="text-muted">ดาวน์โหลดเพื่ออ่านทบทวนหรือพิมพ์ออกมาจด</small>
+                            </div>
+                        </div>
+                        <a href="${fileLink}" target="_blank" class="btn btn-outline-danger rounded-pill fw-bold">
+                            <i class="fas fa-download me-1"></i>ดาวน์โหลดเอกสาร
+                        </a>
+                    </div>
+                `;
+            }
+
+            if (course.video_url) {
+                mediaHTML += `
+                    <div class="mb-4">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-video me-2 text-primary"></i>วิดีโอประกอบการเรียน</h5>
+                        <div class="ratio ratio-16x9 rounded-3 overflow-hidden shadow-sm">
+                            <iframe src="${formatVideoUrl(course.video_url)}" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('mainContentCard').innerHTML = `
+                ${mediaHTML}
+                <div class="content-body">
+                    ${mainText}
+                </div>
+                <hr class="my-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="summary.html" class="btn btn-outline-primary rounded-pill">
+                        <i class="fas fa-arrow-left me-1"></i>กลับไปคลังบทเรียน
+                    </a>
+                    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="btn btn-light rounded-pill border">
+                        <i class="fas fa-arrow-up me-1"></i>กลับขึ้นด้านบน 
+                    </button>
+                </div>
+            `;
+        }
+
+        function formatVideoUrl(url) {
+            if (!url) return '';
+            if (url.includes('youtube.com/watch?v=')) {
+                return url.replace('watch?v=', 'embed/');
+            }
+            if (url.includes('youtu.be/')) {
+                return url.replace('youtu.be/', 'youtube.com/embed/');
+            }
+            return url;
+        }
+
+        function renderError(msg) {
+            document.getElementById('headerContainer').innerHTML = `<h3 class="fw-bold text-warning">เกิดข้อผิดพลาด</h3>`
+            document.getElementById('mainContentCard').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-circle text-danger display-4 mb-3"></i>
+                    <h5 class="text-muted mb-4">${msg}</h5>
+                    <a href="summary.html" class="btn btn-primary rounded-pill px-4">
+                        <i class="fas fa-arrow-left me-2"></i>กลับหน้าบทเรียน
+                    </a>
+                </div>
+            `;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>วิเคราะห์คะแนนสอบ - M.4 PREP</title>
+    <script src="theme.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+        }
+
+        .stat-card {
+            background-color: var(--bs-card-bg);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 16px;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .theme-toggle-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--bs-border-color);
+            background-color: var(--bs-body-bg);
+            cursor: pointer;
+        }
+
+        .progress {
+            height: 12px;
+            border-radius: 10px;
+            background-color: var(--bs-tertiary-bg);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="index.html">
+                <i class="fas fa-book-reader me-2"></i>M.4 PREP
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="summary.html" class="btn btn-outline-primary btn-sm rounded-pill px-3">คลังข้อสอบ & สรุป</a>
+                <button class="theme-toggle-btn" onclick="toggleDarkMode()" title="เปลี่ยนโหมดมืด/สว่าง">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="container my-5" id="mainContainer">
+        <!-- Loading State -->
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3 text-secondary">กำลังวิเคราะห์ข้อมูลคะแนนสอบของคุณ...</p>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const SUPABASE_URL = 'https://jykdmzhqrcdyulztcota.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5a2RtemhxcmNkeXVsenRjb3RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTg0MjcsImV4cCI6MjEwNTM5NDQyN30.Cz7joFgrCPLFyAhKlUL9azLcExXsskUEoAUBd0yc99E';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const subjectNames = {
+            'math': { name: 'คณิตศาสตร์', icon: 'fa-calculator', color: 'primary' },
+            'science': { name: 'วิทยาศาสตร์', icon: 'fa-flask', color: 'success' },
+            'english': { name: 'ภาษาอังกฤษ', icon: 'fa-language', color: 'danger' },
+            'thai': { name: 'ภาษาไทย', icon: 'fa-book-open', color: 'warning' },
+            'society': { name: 'สังคมศึกษา', icon: 'fa-globe-asia', color: 'info' }
+        };
+
+        document.addEventListener('DOMContentLoaded', loadAnalytics);
+
+        async function loadAnalytics() {
+            const container = document.getElementById('mainContainer');
+
+            // 1. เช็คว่าล็อกอินหรือยัง
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (!session || !session.user) {
+                container.innerHTML = `
+                    <div class="text-center py-5 stat-card p-5">
+                        <i class="fas fa-lock fa-3x text-warning mb-3"></i>
+                        <h4 class="fw-bold">กรุณาเข้าสู่ระบบก่อนดูผลวิเคราะห์</h4>
+                        <p class="text-secondary mb-4">ระบบจะดึงประวัติการทำข้อสอบเฉพาะบัญชีของคุณมาวิเคราะห์จุดอ่อน-จุดแข็ง</p>
+                        <a href="login.html" class="btn btn-primary rounded-pill px-4">เข้าสู่ระบบเลย</a>
+                    </div>
+                `;
+                return;
+            }
+
+            const user = session.user;
+            const username = user.email.split('@')[0];
+
+            // 2. ดึงคะแนนสอบเฉพาะของ User ID นี้
+            const { data: results, error } = await _supabase
+                .from('exam_results')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error(error);
+                container.innerHTML = `<div class="alert alert-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}</div>`;
+                return;
+            }
+
+            // กรณีที่ยังไม่เคยทำข้อสอบเลย
+            if (!results || results.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5 stat-card p-5">
+                        <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+                        <h4 class="fw-bold">สวัสดีคุณ ${username}! ยังไม่มีประวัติการทำข้อสอบ</h4>
+                        <p class="text-secondary mb-4">ลองไปทำข้อสอบสัก 1 ชุด เพื่อให้ระบบช่วยวิเคราะห์จุดอ่อนของคุณกันเลย</p>
+                        <a href="summary.html?mode=quiz" class="btn btn-primary rounded-pill px-4">ไปทำข้อสอบกันเลย</a>
+                    </div>
+                `;
+                return;
+            }
+
+            // 3. คำนวณสถิติรวม, แยกตามวิชา และแยกตามบทเรียน (Topic)
+            let totalScore = 0;
+            let totalQuestions = 0;
+            const subjectStats = {};
+            const topicStats = {};
+
+            results.forEach(row => {
+                totalScore += row.score;
+                totalQuestions += row.total_questions;
+
+                // จัดกลุ่มตามวิชา
+                if (!subjectStats[row.subject]) {
+                    subjectStats[row.subject] = { score: 0, total: 0 };
+                }
+                subjectStats[row.subject].score += row.score;
+                subjectStats[row.subject].total += row.total_questions;
+
+                // จัดกลุ่มตามเรื่องย่อย (Topic)
+                const topicKey = `${row.subject}::${row.topic}`;
+                if (!topicStats[topicKey]) {
+                    topicStats[topicKey] = { subject: row.subject, topic: row.topic, score: 0, total: 0 };
+                }
+                topicStats[topicKey].score += row.score;
+                topicStats[topicKey].total += row.total_questions;
+            });
+
+            const overallPercent = Math.round((totalScore / totalQuestions) * 100);
+
+            // แปลง Topic เป็น Array และเรียงจากคะแนนน้อยไปมาก (หาจุดอ่อน)
+            const topicList = Object.values(topicStats).map(t => ({
+                ...t,
+                percent: Math.round((t.score / t.total) * 100)
+            })).sort((a, b) => a.percent - b.percent);
+
+            // กรองเรื่องที่ได้คะแนนต่ำกว่า 60% เป็น "จุดอ่อน"
+            const weaknesses = topicList.filter(t => t.percent < 60);
+
+            renderDashboard(username, results.length, overallPercent, subjectStats, topicList, weaknesses);
+        }
+
+        function renderDashboard(username, totalExams, overallPercent, subjectStats, topicList, weaknesses) {
+            const container = document.getElementById('mainContainer');
+
+            // สร้าง HTML ส่วนแจ้งเตือนจุดอ่อน
+            let weaknessHTML = '';
+            if (weaknesses.length > 0) {
+                weaknessHTML = `
+                    <div class="alert alert-danger border-0 rounded-4 p-4 mb-4 shadow-sm">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-exclamation-triangle me-2"></i>เรื่องที่คุณควรทบทวนเพิ่มเติม (คะแนนต่ำกว่า 60%)</h5>
+                        <div class="row g-3">
+                            ${weaknesses.map(w => {
+                                const sub = subjectNames[w.subject] || { name: w.subject };
+                                return `
+                                    <div class="col-md-6">
+                                        <div class="d-flex justify-content-between align-items-center bg-body p-3 rounded-3 border">
+                                            <div>
+                                                <span class="badge bg-danger mb-1">${sub.name}</span>
+                                                <h6 class="fw-bold mb-0">เรื่อง: ${w.topic}</h6>
+                                                <small class="text-danger fw-bold">ความแม่นยำ ${w.percent}% (${w.score}/${w.total} ข้อ)</small>
+                                            </div>
+                                            <a href="summary.html?subject=${w.subject}" class="btn btn-sm btn-outline-danger rounded-pill">
+                                                อ่านสรุปเพิ่ม <i class="fas fa-arrow-right ms-1"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                weaknessHTML = `
+                    <div class="alert alert-success border-0 rounded-4 p-4 mb-4 shadow-sm">
+                        <h5 class="fw-bold mb-1"><i class="fas fa-trophy me-2"></i>ยอดเยี่ยมมาก!</h5>
+                        <p class="mb-0">ตอนนี้คุณยังไม่มีบทเรียนไหนที่ได้คะแนนต่ำกว่า 60% รักษามาตรฐานนี้ต่อไปนะ!</p>
+                    </div>
+                `;
+            }
+
+            // สร้าง HTML ความถนัดแยกรายวิชา
+            const subjectCardsHTML = Object.keys(subjectStats).map(subKey => {
+                const stat = subjectStats[subKey];
+                const percent = Math.round((stat.score / stat.total) * 100);
+                const info = subjectNames[subKey] || { name: subKey, icon: 'fa-book', color: 'secondary' };
+                const barColor = percent < 60 ? 'bg-danger' : (percent < 80 ? 'bg-warning' : 'bg-success');
+
+                return `
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold"><i class="fas ${info.icon} text-${info.color} me-2"></i>${info.name}</span>
+                            <span class="fw-bold">${percent}% <small class="text-secondary fw-normal">(${stat.score}/${stat.total})</small></span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar ${barColor}" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // สร้าง HTML ตารางรายละเอียดทุกบทเรียน
+            const topicRowsHTML = topicList.map(t => {
+                const info = subjectNames[t.subject] || { name: t.subject };
+                const isWeak = t.percent < 60;
+                const badge = isWeak 
+                    ? `<span class="badge bg-danger-subtle text-danger rounded-pill">ควรทบทวนเพิ่ม</span>`
+                    : `<span class="badge bg-success-subtle text-success rounded-pill">ทำได้ดีแล้ว</span>`;
+
+                return `
+                    <tr>
+                        <td><span class="fw-bold">${info.name}</span></td>
+                        <td>${t.topic}</td>
+                        <td>${t.score} / ${t.total}</td>
+                        <td style="width: 25%;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar ${isWeak ? 'bg-danger' : 'bg-success'}" style="width: ${t.percent}%"></div>
+                                </div>
+                                <small class="fw-bold">${t.percent}%</small>
+                            </div>
+                        </td>
+                        <td>${badge}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="fw-bold mb-1">📊 วิเคราะห์ผลการเรียนของ ${username}</h2>
+                        <p class="text-secondary mb-0">สรุปจุดแข็งและจุดอ่อนจากประวัติการทำข้อสอบทั้งหมดของคุณ</p>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="stat-card p-4 text-center">
+                            <p class="text-secondary small mb-1">ความแม่นยำเฉลี่ยรวม</p>
+                            <h2 class="fw-bold text-primary mb-0">${overallPercent}%</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card p-4 text-center">
+                            <p class="text-secondary small mb-1">จำนวนครั้งที่ทำข้อสอบ</p>
+                            <h2 class="fw-bold text-success mb-0">${totalExams} ครั้ง</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card p-4 text-center">
+                            <p class="text-secondary small mb-1">บทเรียนที่ต้องเร่งทบทวน</p>
+                            <h2 class="fw-bold text-danger mb-0">${weaknesses.length} เรื่อง</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- จุดอ่อนที่ต้องรีบแก้ -->
+                ${weaknessHTML}
+
+                <div class="row g-4">
+                    <!-- คะแนนแยกรายวิชา -->
+                    <div class="col-lg-5">
+                        <div class="stat-card p-4 h-100">
+                            <h5 class="fw-bold mb-4"><i class="fas fa-layer-group text-primary me-2"></i>ความถนัดแยกรายวิชา</h5>
+                            ${subjectCardsHTML}
+                        </div>
+                    </div>
+
+                    <!-- คะแนนแยกตามเรื่องย่อย (Topic) -->
+                    <div class="col-lg-7">
+                        <div class="stat-card p-4 h-100">
+                            <h5 class="fw-bold mb-4"><i class="fas fa-list-check text-primary me-2"></i>รายละเอียดแยกตามบทเรียน</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr class="text-secondary small">
+                                            <th>วิชา</th>
+                                            <th>บทเรียน / เรื่อง</th>
+                                            <th>คะแนน</th>
+                                            <th>เปอร์เซ็นต์</th>
+                                            <th>สถานะ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${topicRowsHTML}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+
+</html>

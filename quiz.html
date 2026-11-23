@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบทำข้อสอบ - M.4 PREP</title>
+
+    <!-- Google Fonts & Font Awesome & Bootstrap -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .study-header {
+            background: linear-gradient(135deg, #2563eb 0%, #0d6efd 100%);
+            color: white;
+            padding: 40px 0 30px 0;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+        }
+
+        .content-card {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            padding: 35px;
+            margin-top: -30px;
+            border: none;
+        }
+
+        .badge-subject {
+            font-size: 0.85rem;
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        /* ตกแต่งตัวเลือกข้อสอบ */
+        .question-item {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .option-box {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-box:hover:not(.disabled) {
+            border-color: #2563eb;
+            background-color: #f0f7ff;
+        }
+
+        .option-box.selected {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            font-weight: 600;
+        }
+
+        .option-box.is-correct {
+            border-color: #16a34a !important;
+            background-color: #dcfce7 !important;
+            color: #15803d;
+            font-weight: 600;
+        }
+
+        .option-box.is-wrong {
+            border-color: #dc2626 !important;
+            background-color: #fee2e2 !important;
+            color: #b91c1c;
+        }
+
+        .option-prefix {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #f1f5f9;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .explanation-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #2563eb;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-top: 15px;
+        }
+
+        .action-box {
+            background-color: #f1f5f9;
+            border-radius: 16px;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="index.html">
+                <i class="fas fa-edit me-2"></i>M.4 PREP QUIZ
+            </a>
+            <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill">
+                <i class="fas fa-arrow-left me-1"></i>กลับหน้าคลังข้อสอบ
+            </a>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <header class="study-header text-center">
+        <div class="container" id="headerContainer">
+            <div class="spinner-border text-light mb-2" role="status"></div>
+            <p class="mb-0 text-white-50">กำลังเตรียมข้อสอบ...</p>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="container mb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="content-card" id="mainContentCard">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-3 text-muted">กำลังดึงรายการข้อสอบจากระบบ...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Config Supabase
+        const SUPABASE_URL = 'https://jykdmzhqrcdyulztcota.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5a2RtemhxcmNkeXVsenRjb3RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTg0MjcsImV4cCI6MjEwNTM5NDQyN30.Cz7joFgrCPLFyAhKlUL9azLcExXsskUEoAUBd0yc99E';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const subjectConfig = {
+            'math': { name: 'คณิตศาสตร์', badgeClass: 'bg-primary text-white', icon: 'fa-calculator' },
+            'science': { name: 'วิทยาศาสตร์', badgeClass: 'bg-success text-white', icon: 'fa-flask' },
+            'english': { name: 'ภาษาอังกฤษ', badgeClass: 'bg-danger text-white', icon: 'fa-language' },
+            'thai': { name: 'ภาษาไทย', badgeClass: 'bg-warning text-dark', icon: 'fa-book-open' },
+            'society': { name: 'สังคมศึกษา', badgeClass: 'bg-info text-white', icon: 'fa-globe-asia' },
+            'other': { name: 'วิชาทั่วไป', badgeClass: 'bg-secondary text-white', icon: 'fa-book' }
+        };
+
+        let questionsData = [];
+        let userAnswers = {}; // { 0: choiceIndex, 1: choiceIndex }
+        let isSubmitted = false;
+
+        // ฟังก์ชันระบุหมวดวิชาให้รองรับหลากหลายรูปแบบ
+        function getSubjectKey(item) {
+            if (!item) return 'other';
+
+            const directVal = String(
+                (typeof item === 'string' ? item : '') ||
+                item.subject || 
+                item.subject_id || 
+                item.category || 
+                item.subject_name || 
+                item.type || 
+                item.course_type || 
+                ''
+            ).toLowerCase().trim();
+
+            if (
+                directVal === 'science' || 
+                directVal === 'sci' || 
+                directVal === 'วิทย์' || 
+                directVal === 'วิทยาศาสตร์' || 
+                directVal === '2' || 
+                directVal.includes('sci') || 
+                directVal.includes('วิทย์')
+            ) {
+                return 'science';
+            }
+
+            if (directVal === 'math' || directVal === 'คณิต' || directVal === 'คณิตศาสตร์' || directVal === '1') return 'math';
+            if (directVal === 'english' || directVal === 'eng' || directVal === 'ภาษาอังกฤษ' || directVal === '3') return 'english';
+            if (directVal === 'thai' || directVal === 'ภาษาไทย' || directVal === 'ไทย' || directVal === '4') return 'thai';
+            if (directVal === 'society' || directVal === 'soc' || directVal === 'สังคมศึกษา' || directVal === 'สังคม' || directVal === '5') return 'society';
+
+            const textContent = (String(item.title || item.name || item.topic || '') + ' ' + String(item.description || item.detail || '')).toLowerCase();
+
+            if (['วิทย์', 'science', 'sci', 'ฟิสิกส์', 'เคมี', 'ชีว', 'ดารา', 'โลก', 'ธรณี', 'เซลล์', 'พืช', 'สัตว์', 'แรง', 'พลังงาน', 'ไฟฟ้า', 'อะตอม', 'สาร'].some(k => textContent.includes(k))) return 'science';
+            if (['คณิต', 'math', 'เซต', 'สมการ', 'ตรีโกณ', 'ฟังก์ชัน', 'เลข', 'สถิติ', 'ความน่าจะเป็น'].some(k => textContent.includes(k))) return 'math';
+            if (['อังกฤษ', 'english', 'eng', 'vocab', 'grammar', 'tense'].some(k => textContent.includes(k))) return 'english';
+            if (['ไทย', 'thai', 'วรรณคดี', 'หลักภาษา', 'โคลง', 'กลอน'].some(k => textContent.includes(k))) return 'thai';
+            if (['สังคม', 'social', 'ประวัติ', 'ภูมิศาสตร์', 'ศาสนา', 'เศรษฐ'].some(k => textContent.includes(k))) return 'society';
+
+            return 'other';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadQuizData();
+        });
+
+        // 1. ดึงข้อมูลข้อสอบตาม Parameter ใน URL
+        async function loadQuizData() {
+            const params = new URLSearchParams(window.location.search);
+            const topicIdParam = params.get('topic_id') || params.get('id');
+            const rawTopicName = params.get('topic_name') || params.get('topic');
+            const rawSubject = params.get('subject');
+
+            try {
+                let quizList = [];
+                let topicTitle = rawTopicName || 'แบบทดสอบตะลุยโจทย์';
+                let subjectName = rawSubject || '';
+
+                // Step 1: ถ้าเป็น ID แบบตัวเลข ให้ดึงจากตาราง topics ก่อน
+                if (topicIdParam && !isNaN(topicIdParam)) {
+                    const { data: topicData } = await _supabase.from('topics').select('*').eq('id', topicIdParam).maybeSingle();
+                    if (topicData) {
+                        topicTitle = topicData.title || topicData.name || topicData.topic_name || topicTitle;
+                        subjectName = topicData.subject || topicData.subject_id || subjectName;
+                    }
+
+                    // ดึงข้อสอบที่ตรงกับ topic_id
+                    const resQuizzes = await _supabase.from('quizzes').select('*').eq('topic_id', topicIdParam);
+                    if (resQuizzes.data && resQuizzes.data.length > 0) {
+                        quizList = resQuizzes.data;
+                    }
+                }
+
+                // Step 2: หากค้นหาจาก ID ไม่เจอ ให้ค้นหาข้อสอบจาก Supabase ทั้งหมดแล้วกรองเทียบชื่อ/ID
+                if (quizList.length === 0) {
+                    const searchTitle = rawTopicName || topicTitle || topicIdParam;
+                    const resAll = await _supabase.from('quizzes').select('*');
+                    const allQuizzes = resAll.data || [];
+
+                    if (searchTitle) {
+                        const targetSearch = String(searchTitle).trim().toLowerCase();
+                        const targetId = String(topicIdParam || '').trim();
+
+                        quizList = allQuizzes.filter(q => {
+                            const qTopicId = String(q.topic_id || '');
+                            const qTopicName = String(q.topic_name || q.topic || q.topic_title || '').trim().toLowerCase();
+
+                            return (targetId && qTopicId === targetId) ||
+                                   (qTopicName && (qTopicName === targetSearch || qTopicName.includes(targetSearch) || targetSearch.includes(qTopicName)));
+                        });
+                    }
+
+                    // Fallback กรณีหาไม่เจอจริงๆ แต่มีระบุวิชามา ให้ดึงข้อสอบในวิชานั้นๆ
+                    if (quizList.length === 0 && rawSubject) {
+                        const targetSubKey = getSubjectKey(rawSubject);
+                        quizList = allQuizzes.filter(q => getSubjectKey(q) === targetSubKey);
+                    }
+                }
+
+                // ถ้าค้นหาไม่พบข้อสอบในระบบ
+                if (quizList.length === 0) {
+                    renderError('ไม่พบชุดข้อสอบของหัวข้อนี้ในระบบ กรุณากลับไปเลือกวิชาใหม่อีกครั้ง');
+                    return;
+                }
+
+                questionsData = quizList;
+                if (!subjectName && quizList[0]) {
+                    subjectName = quizList[0].subject || quizList[0].subject_id || getSubjectKey(quizList[0]);
+                }
+
+                renderHeaderUI(topicTitle, subjectName);
+                renderQuizQuestions();
+
+            } catch (err) {
+                console.error('Error loading quiz:', err);
+                renderError('เกิดข้อผิดพลาดในการดึงข้อมูลข้อสอบ');
+            }
+        }
+
+        // 2. แสดงผล Header วิชาและหัวข้อ
+        function renderHeaderUI(topicTitle, rawSubject) {
+            const subKey = getSubjectKey(rawSubject);
+            const config = subjectConfig[subKey] || subjectConfig['other'];
+
+            document.getElementById('headerContainer').innerHTML = `
+                <span class="badge badge-subject ${config.badgeClass} mb-2">
+                    <i class="fas ${config.icon} me-1"></i>${config.name}
+                </span>
+                <h2 class="fw-bold mb-2">${topicTitle}</h2>
+                <p class="lead opacity-75 small mb-0">แบบทดสอบประเมินความรู้ ตะลุยโจทย์เตรียมสอบเข้า ม.4 (จำนวน ${questionsData.length} ข้อ)</p>
+            `;
+        }
+
+        // 3. แปลงโครงสร้าง Choice ใน Supabase ให้ยืดหยุ่น
+        function getQuestionChoices(q) {
+            if (Array.isArray(q.options) && q.options.length > 0) return q.options;
+            if (Array.isArray(q.choices) && q.choices.length > 0) return q.choices;
+            
+            let choices = [];
+            if (q.option_a !== undefined && q.option_a !== null) choices.push(q.option_a);
+            if (q.option_b !== undefined && q.option_b !== null) choices.push(q.option_b);
+            if (q.option_c !== undefined && q.option_c !== null) choices.push(q.option_c);
+            if (q.option_d !== undefined && q.option_d !== null) choices.push(q.option_d);
+
+            if (choices.length === 0) {
+                if (q.choice1 || q.choice_1) choices.push(q.choice1 || q.choice_1);
+                if (q.choice2 || q.choice_2) choices.push(q.choice2 || q.choice_2);
+                if (q.choice3 || q.choice_3) choices.push(q.choice3 || q.choice_3);
+                if (q.choice4 || q.choice_4) choices.push(q.choice4 || q.choice_4);
+            }
+            return choices;
+        }
+
+        // แปลงข้อถูกให้เป็น Index (0, 1, 2, 3)
+        function getCorrectAnswerIndex(q, choices) {
+            const ans = q.correct_answer !== undefined ? q.correct_answer : 
+                        (q.answer !== undefined ? q.answer : 
+                        (q.correct !== undefined ? q.correct : q.correct_option));
+            if (ans === undefined || ans === null) return 0;
+
+            if (typeof ans === 'number') {
+                return (ans >= 0 && ans < choices.length) ? ans : (ans >= 1 ? ans - 1 : 0);
+            }
+
+            const strAns = String(ans).trim().toUpperCase();
+            if (strAns === 'A' || strAns === '1' || strAns === 'ก') return 0;
+            if (strAns === 'B' || strAns === '2' || strAns === 'ข') return 1;
+            if (strAns === 'C' || strAns === '3' || strAns === 'ค') return 2;
+            if (strAns === 'D' || strAns === '4' || strAns === 'ง') return 3;
+
+            const idx = choices.findIndex(c => String(c).trim() === String(ans).trim());
+            return idx !== -1 ? idx : 0;
+        }
+
+        // 4. Render รายการข้อสอบ
+        function renderQuizQuestions() {
+            const container = document.getElementById('mainContentCard');
+
+            let html = `
+                <div class="action-box mb-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="fw-bold mb-1"><i class="fas fa-info-circle text-primary me-2"></i>คำชี้แจงในการทำข้อสอบ</h6>
+                        <small class="text-muted">เลือกคำตอบที่ถูกต้องที่สุดเพียงข้อเดียว เมื่อทำเสร็จแล้วให้กดปุ่ม "ส่งคำตอบและตรวจคะแนน"</small>
+                    </div>
+                </div>
+                <div id="questionsContainer">
+            `;
+
+            questionsData.forEach((q, qIndex) => {
+                const choices = getQuestionChoices(q);
+                const questionText = q.question || q.question_text || q.title || `ข้อที่ ${qIndex + 1}`;
+                const prefixes = ['ก', 'ข', 'ค', 'ง', 'จ'];
+                const qImage = q.image_url || q.image || q.img;
+
+                html += `
+                    <div class="question-item" id="q_card_${qIndex}">
+                        <h5 class="fw-bold mb-3">
+                            <span class="badge bg-primary me-2">${qIndex + 1}</span>
+                            ${questionText}
+                        </h5>
+                        ${qImage ? `<div class="mb-3"><img src="${qImage}" class="img-fluid rounded" style="max-height:300px;"></div>` : ''}
+
+                        <div class="options-list">
+                `;
+
+                choices.forEach((choice, cIndex) => {
+                    html += `
+                        <div class="option-box" id="opt_${qIndex}_${cIndex}" onclick="selectOption(${qIndex}, ${cIndex})">
+                            <span class="option-prefix">${prefixes[cIndex] || (cIndex + 1)}</span>
+                            <span>${choice}</span>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                        <div id="explanation_${qIndex}"></div>
+                    </div>
+                `;
+            });
+
+            html += `
+                </div>
+
+                <div class="text-center mt-4">
+                    <button id="submitBtn" onclick="submitQuiz()" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm">
+                        <i class="fas fa-paper-plane me-2"></i>ส่งคำตอบและตรวจคะแนน
+                    </button>
+                </div>
+
+                <hr class="my-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="index.html" class="btn btn-outline-primary rounded-pill">
+                        <i class="fas fa-arrow-left me-1"></i>กลับไปคลังข้อสอบ
+                    </a>
+                    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="btn btn-light rounded-pill border">
+                        <i class="fas fa-arrow-up me-1"></i>กลับขึ้นด้านบน
+                    </button>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // 5. เลือกคำตอบ
+        function selectOption(qIndex, cIndex) {
+            if (isSubmitted) return; // หากส่งคำตอบแล้วกดเปลี่ยนไม่ได้
+
+            userAnswers[qIndex] = cIndex;
+
+            // ปรับ Style ปุ่มเลือก
+            const choices = getQuestionChoices(questionsData[qIndex]);
+            choices.forEach((_, idx) => {
+                const optEl = document.getElementById(`opt_${qIndex}_${idx}`);
+                if (optEl) {
+                    if (idx === cIndex) {
+                        optEl.classList.add('selected');
+                    } else {
+                        optEl.classList.remove('selected');
+                    }
+                }
+            });
+        }
+
+        // 6. ตรวจคำตอบและคำนวณคะแนน
+        function submitQuiz() {
+            if (isSubmitted) return;
+
+            // ตรวจสอบว่าทำครบทุกข้อหรือยัง
+            const unanswered = questionsData.findIndex((_, idx) => userAnswers[idx] === undefined);
+            if (unanswered !== -1) {
+                if (!confirm(`คุณยังไม่ได้ทำข้อที่ ${unanswered + 1} ยืนยันที่จะส่งคำตอบหรือไม่?`)) {
+                    document.getElementById(`q_card_${unanswered}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+
+            isSubmitted = true;
+            let score = 0;
+
+            questionsData.forEach((q, qIndex) => {
+                const choices = getQuestionChoices(q);
+                const correctIdx = getCorrectAnswerIndex(q, choices);
+                const userIdx = userAnswers[qIndex];
+
+                if (userIdx === correctIdx) {
+                    score++;
+                }
+
+                // แสดงผลลัพธ์บน Choice
+                choices.forEach((_, cIndex) => {
+                    const optEl = document.getElementById(`opt_${qIndex}_${cIndex}`);
+                    if (optEl) {
+                        optEl.classList.add('disabled');
+                        optEl.classList.remove('selected');
+
+                        if (cIndex === correctIdx) {
+                            optEl.classList.add('is-correct');
+                        } else if (cIndex === userIdx && userIdx !== correctIdx) {
+                            optEl.classList.add('is-wrong');
+                        }
+                    }
+                });
+
+                // แสดง เฉลย/คำอธิบาย
+                const expText = q.explanation || q.explain || q.detail;
+                if (expText) {
+                    document.getElementById(`explanation_${qIndex}`).innerHTML = `
+                        <div class="explanation-box">
+                            <strong class="text-primary"><i class="fas fa-lightbulb me-1"></i>คำอธิบายเฉลย:</strong>
+                            <p class="mb-0 small mt-1 text-secondary">${expText}</p>
+                        </div>
+                    `;
+                }
+            });
+
+            // แสดงกล่องสรุปคะแนนด้านบนสุด
+            const percentage = Math.round((score / questionsData.length) * 100);
+            let resultBadge = percentage >= 80 ? 'bg-success' : (percentage >= 50 ? 'bg-primary' : 'bg-danger');
+            let resultText = percentage >= 80 ? 'ยอดเยี่ยมมาก! คุณมีความพร้อมสูงมาก' : (percentage >= 50 ? 'ผ่านเกณฑ์! ลองทบทวนจุดที่ผิดอีกนิดนะ' : 'ควรทบทวนเนื้อหาเพิ่มเติมเพื่อความแม่นยำ');
+
+            const scoreCard = `
+                <div class="card border-0 bg-light text-center p-4 mb-4 rounded-4 shadow-sm">
+                    <h4 class="fw-bold mb-2">สรุปผลการทดสอบ</h4>
+                    <div class="display-4 fw-bold my-2 text-primary">${score} <span class="fs-4 text-muted">/ ${questionsData.length}</span></div>
+                    <p class="mb-2"><span class="badge ${resultBadge} fs-6 px-3 py-2 rounded-pill">${resultText} (${percentage}%)</span></p>
+                    <div class="mt-3">
+                        <button onclick="location.reload()" class="btn btn-outline-primary rounded-pill px-4 me-2">
+                            <i class="fas fa-rotate-right me-1"></i>ทำข้อสอบอีกครั้ง
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const container = document.getElementById('mainContentCard');
+            container.insertAdjacentHTML('afterbegin', scoreCard);
+
+            // ซ่อนปุ่มส่งคำตอบ
+            document.getElementById('submitBtn').style.display = 'none';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 7. กรณีเกิดข้อผิดพลาด
+        function renderError(msg) {
+            document.getElementById('headerContainer').innerHTML = `<h3 class="fw-bold text-warning">เกิดข้อผิดพลาด</h3>`;
+            document.getElementById('mainContentCard').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-circle text-danger display-4 mb-3"></i>
+                    <h5 class="text-muted mb-4">${msg}</h5>
+                    <a href="index.html" class="btn btn-primary rounded-pill px-4">
+                        <i class="fas fa-arrow-left me-2"></i>กลับหน้าคลังข้อสอบ
+                    </a>
+                </div>
+            `;
+        }
+    </script>
+</body>
+
+</html>

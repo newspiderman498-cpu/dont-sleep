@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M.4 PREP - ระบบจัดการหลังบ้าน (Admin Dashboard)</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f4f6f9; }
+        .admin-sidebar { background-color: #1e293b; min-height: 100vh; color: white; }
+        .admin-sidebar .nav-link { color: #94a3b8; padding: 12px 20px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; }
+        .admin-sidebar .nav-link:hover, .admin-sidebar .nav-link.active { color: white; background-color: #2563eb; }
+        .card-custom { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+
+<body>
+
+    <div class="container-fluid">
+        <div class="row">
+
+            <!-- Sidebar เมนูซ้ายมือ -->
+            <div class="col-md-3 col-lg-2 admin-sidebar p-3 d-none d-md-block">
+                <div class="d-flex align-items-center mb-4 px-2">
+                    <i class="fas fa-user-shield text-primary fs-3 me-2"></i>
+                    <span class="fs-5 fw-bold">Admin Panel</span>
+                </div>
+                <hr class="border-secondary">
+                <ul class="nav nav-pills flex-column" id="adminTab">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-courses-btn" onclick="switchTab('courses')">
+                            <i class="fas fa-book me-2"></i>จัดการบทเรียน
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-quizzes-btn" onclick="switchTab('quizzes')">
+                            <i class="fas fa-pen-nib me-2"></i>จัดการคลังข้อสอบ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-topics-btn" onclick="switchTab('topics')">
+                            <i class="fas fa-tags me-2"></i>จัดการหัวข้อเรื่อง
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="index.html" class="nav-link text-warning mt-4"><i class="fas fa-arrow-left me-2"></i>กลับหน้าหลัก (User)</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 p-4">
+
+                <!-- TAB 1: จัดการบทเรียน -->
+                <div id="section-courses">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="fw-bold m-0">จัดการบทเรียน / เนื้อหาติว</h2>
+                            <p class="text-muted small">รวมวิดีโอคลิปและเอกสารสรุปเนื้อหา</p>
+                        </div>
+                        <button class="btn btn-primary rounded-pill px-4" onclick="openAddCourseModal()">
+                            <i class="fas fa-plus me-2"></i>เพิ่มบทเรียนใหม่
+                        </button>
+                    </div>
+
+                    <div class="card card-custom p-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>รูปปก</th>
+                                        <th>ชื่อบทเรียน</th>
+                                        <th>วิชา</th>
+                                        <th>สื่อที่มี</th>
+                                        <th class="text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="courses-table-body">
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">กำลังโหลดข้อมูล...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: จัดการคลังข้อสอบ -->
+                <div id="section-quizzes" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="fw-bold m-0">จัดการคลังข้อสอบ</h2>
+                            <p class="text-muted small">เพิ่มโจทย์ข้อสอบ เลือกรายวิชา และหัวข้อเรื่องที่คุณกำหนดเอง</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline-secondary rounded-pill me-2 px-3" onclick="switchTab('topics')">
+                                <i class="fas fa-cog me-1"></i>จัดการหัวข้อเรื่อง
+                            </button>
+                            <button class="btn btn-success rounded-pill px-4" onclick="openAddQuizModal()">
+                                <i class="fas fa-plus me-2"></i>เพิ่มข้อสอบใหม่
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card card-custom p-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>วิชา</th>
+                                        <th>หัวข้อเรื่อง</th>
+                                        <th>โจทย์ข้อสอบ</th>
+                                        <th>เฉลยข้อที่ถูก</th>
+                                        <th class="text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="quizzes-table-body">
+                                    <tr><td colspan="6" class="text-center py-4 text-muted">กำลังโหลดข้อมูล...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: จัดการหัวข้อเรื่อง (เพิ่ม/ลบ ได้เองอิสระ) -->
+                <div id="section-topics" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="fw-bold m-0">จัดการหัวข้อเรื่อง (Topics)</h2>
+                            <p class="text-muted small">เพิ่ม/ลบ หัวข้อบทเรียนในแต่ละวิชา เพื่อนำไปใช้ติ๊กเลือกตอนเพิ่มข้อสอบ</p>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- ฝั่งซ้าย: ฟอร์มเพิ่มหัวข้อใหม่ -->
+                        <div class="col-md-5">
+                            <div class="card card-custom p-4">
+                                <h5 class="fw-bold mb-3"><i class="fas fa-plus-circle text-primary me-2"></i>เพิ่มหัวข้อเรื่องใหม่</h5>
+                                <form id="addTopicForm" onsubmit="saveTopic(event)">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">เลือกวิชา <span class="text-danger">*</span></label>
+                                        <select id="topic_manage_subject" class="form-select" onchange="fetchTopicsList()" required>
+                                            <option value="คณิตศาสตร์">คณิตศาสตร์</option>
+                                            <option value="วิทยาศาสตร์">วิทยาศาสตร์</option>
+                                            <option value="ภาษาอังกฤษ">ภาษาอังกฤษ</option>
+                                            <option value="ภาษาไทย">ภาษาไทย</option>
+                                            <option value="สังคมศึกษา">สังคมศึกษา</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">ชื่อหัวข้อเรื่องใหม่ <span class="text-danger">*</span></label>
+                                        <input type="text" id="new_topic_name" class="form-control" placeholder="เช่น เซต, ตรีโกณมิติ, ความน่าจะเป็น" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100 rounded-pill">
+                                        <i class="fas fa-save me-1"></i> บันทึกหัวข้อเรื่อง
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- ฝั่งขวา: รายชื่อหัวข้อเรื่องที่มีอยู่ พร้อมปุ่มลบ -->
+                        <div class="col-md-7">
+                            <div class="card card-custom p-4">
+                                <h5 class="fw-bold mb-3"><i class="fas fa-list me-2"></i>หัวข้อเรื่องในระบบ</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>หัวข้อเรื่อง</th>
+                                                <th class="text-end">จัดการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="topics-table-body">
+                                            <tr><td colspan="3" class="text-center py-3 text-muted">กำลังโหลด...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 1: เพิ่ม / แก้ไขบทเรียน -->
+    <div class="modal fade" id="addCourseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="courseModalTitle">
+                        <i class="fas fa-plus-circle text-primary me-2"></i>เพิ่มบทเรียนใหม่
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="addCourseForm" onsubmit="saveCourse(event)">
+                        <input type="hidden" id="course_edit_id">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold small">ชื่อบทเรียน / หัวข้อติว <span class="text-danger">*</span></label>
+                                <input type="text" id="title" class="form-control" placeholder="เช่น เซตและการดำเนินการ" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small">วิชา <span class="text-danger">*</span></label>
+                                <select id="subject" class="form-select" required>
+                                    <option value="">-- เลือกวิชา --</option>
+                                    <option value="คณิตศาสตร์">คณิตศาสตร์</option>
+                                    <option value="วิทยาศาสตร์">วิทยาศาสตร์</option>
+                                    <option value="ภาษาอังกฤษ">ภาษาอังกฤษ</option>
+                                    <option value="ภาษาไทย">ภาษาไทย</option>
+                                    <option value="สังคมศึกษา">สังคมศึกษา</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small"><i class="fab fa-youtube text-danger me-1"></i>URL วิดีโอติว (YouTube)</label>
+                                <input type="url" id="video_url" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small"><i class="fas fa-file-pdf text-danger me-1"></i>URL เอกสารสรุป (PDF)</label>
+                                <input type="url" id="pdf_url" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small">URL รูปปกบทเรียน</label>
+                                <input type="url" id="image_url" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small">รายละเอียดสรุปย่อ</label>
+                                <textarea id="description" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-end">
+                            <button type="button" class="btn btn-light rounded-pill px-4 me-2" data-bs-dismiss="modal">ยกเลิก</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="courseSubmitBtn">บันทึกบทเรียน</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: เพิ่ม / แก้ไขข้อสอบ -->
+    <div class="modal fade" id="addQuizModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-success" id="quizModalTitle">
+                        <i class="fas fa-pen-nib me-2"></i>เพิ่มข้อสอบใหม่
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="addQuizForm" onsubmit="saveQuiz(event)">
+                        <input type="hidden" id="quiz_edit_id">
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold small">วิชา <span class="text-danger">*</span></label>
+                                <select id="quiz_subject" class="form-select" onchange="loadTopicsForQuizDropdown()" required>
+                                    <option value="">-- เลือกวิชา --</option>
+                                    <option value="คณิตศาสตร์">คณิตศาสตร์</option>
+                                    <option value="วิทยาศาสตร์">วิทยาศาสตร์</option>
+                                    <option value="ภาษาอังกฤษ">ภาษาอังกฤษ</option>
+                                    <option value="ภาษาไทย">ภาษาไทย</option>
+                                    <option value="สังคมศึกษา">สังคมศึกษา</option>
+                                </select>
+                            </div>
+
+                            <!-- หัวข้อเรื่องจะดึงจาก Supabase มาแสดงให้เลือกแบบ Dropdown -->
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold small">หัวข้อเรื่อง (Topic) <span class="text-danger">*</span></label>
+                                <select id="quiz_topic" class="form-select" required disabled>
+                                    <option value="">-- กรุณาเลือกวิชาก่อน --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold small">โจทย์ข้อสอบ <span class="text-danger">*</span></label>
+                                <textarea id="quiz_question" class="form-control" rows="2" placeholder="กรอกโจทย์..." required></textarea>
+                            </div>
+                            <div class="col-md-6"><input type="text" id="option_a" class="form-control" placeholder="ข้อ A" required></div>
+                            <div class="col-md-6"><input type="text" id="option_b" class="form-control" placeholder="ข้อ B" required></div>
+                            <div class="col-md-6"><input type="text" id="option_c" class="form-control" placeholder="ข้อ C" required></div>
+                            <div class="col-md-6"><input type="text" id="option_d" class="form-control" placeholder="ข้อ D" required></div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-success">คำตอบที่ถูกต้อง <span class="text-danger">*</span></label>
+                                <select id="correct_option" class="form-select" required>
+                                    <option value="0">ข้อ A</option>
+                                    <option value="1">ข้อ B</option>
+                                    <option value="2">ข้อ C</option>
+                                    <option value="3">ข้อ D</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small">คำอธิบายเฉลยอย่างละเอียด</label>
+                                <textarea id="quiz_explanation" class="form-control" rows="2" placeholder="อธิบายเพิ่มเติม..."></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-end">
+                            <button type="button" class="btn btn-light rounded-pill px-4 me-2" data-bs-dismiss="modal">ยกเลิก</button>
+                            <button type="submit" class="btn btn-success rounded-pill px-4" id="quizSubmitBtn">บันทึกข้อสอบ</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const SUPABASE_URL = 'https://jykdmzhqrcdyulztcota.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_kz9-wHYTu0nTM6Lxoi1EGg_LgfrbPvB';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const addCourseModal = new bootstrap.Modal(document.getElementById('addCourseModal'));
+        const addQuizModal = new bootstrap.Modal(document.getElementById('addQuizModal'));
+
+        // เก็บข้อมูลไว้ในหน่วยความจำเพื่อดึงมาแสดงตอนกดแก้ไขได้ทันที
+        let allCourses = [];
+        let allQuizzes = [];
+
+        function switchTab(tab) {
+            document.getElementById('section-courses').classList.add('d-none');
+            document.getElementById('section-quizzes').classList.add('d-none');
+            document.getElementById('section-topics').classList.add('d-none');
+
+            document.getElementById('tab-courses-btn').classList.remove('active');
+            document.getElementById('tab-quizzes-btn').classList.remove('active');
+            document.getElementById('tab-topics-btn').classList.remove('active');
+
+            if (tab === 'courses') {
+                document.getElementById('section-courses').classList.remove('d-none');
+                document.getElementById('tab-courses-btn').classList.add('active');
+                fetchCourses();
+            } else if (tab === 'quizzes') {
+                document.getElementById('section-quizzes').classList.remove('d-none');
+                document.getElementById('tab-quizzes-btn').classList.add('active');
+                fetchQuizzes();
+            } else if (tab === 'topics') {
+                document.getElementById('section-topics').classList.remove('d-none');
+                document.getElementById('tab-topics-btn').classList.add('active');
+                fetchTopicsList();
+            }
+        }
+
+        /* ------------------ ส่วนจัดการหัวข้อเรื่อง (TOPICS) ------------------ */
+        async function fetchTopicsList() {
+            const subject = document.getElementById('topic_manage_subject').value;
+            const tableBody = document.getElementById('topics-table-body');
+            
+            const { data: topics, error } = await _supabase
+                .from('topics')
+                .select('*')
+                .eq('subject', subject)
+                .order('id', { ascending: true });
+
+            if (error || !topics || topics.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-muted">ยังไม่มีหัวข้อเรื่องในวิชานี้ (กดเพิ่มทางซ้ายได้เลย)</td></tr>`;
+                return;
+            }
+
+            tableBody.innerHTML = '';
+            topics.forEach((item, index) => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td class="fw-bold text-primary">${item.name}</td>
+                        <td class="text-end">
+                            <button class="btn btn-outline-danger btn-sm rounded-circle" onclick="deleteTopic(${item.id})" title="ลบ">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function saveTopic(event) {
+            event.preventDefault();
+            const subject = document.getElementById('topic_manage_subject').value;
+            const topicName = document.getElementById('new_topic_name').value.trim();
+
+            if (!topicName) return;
+
+            const { error } = await _supabase.from('topics').insert([{ subject: subject, name: topicName }]);
+            if (error) { alert('เกิดข้อผิดพลาด: ' + error.message); return; }
+
+            alert(`เพิ่มหัวข้อเรื่อง "${topicName}" สำหรับวิชา ${subject} สำเร็จ!`);
+            document.getElementById('new_topic_name').value = '';
+            fetchTopicsList();
+        }
+
+        async function deleteTopic(id) {
+            if (confirm('คุณต้องการลบหัวข้อเรื่องนี้ใช่หรือไม่?')) {
+                await _supabase.from('topics').delete().eq('id', id);
+                fetchTopicsList();
+            }
+        }
+
+        // ดึงหัวข้อเรื่องจาก Supabase ใส่ใน Dropdown (รองรับการเลือกค่าเดิมตอนแก้ไข)
+        async function loadTopicsForQuizDropdown(selectedTopic = '') {
+            const subject = document.getElementById('quiz_subject').value;
+            const topicSelect = document.getElementById('quiz_topic');
+
+            topicSelect.innerHTML = '<option value="">-- กำลังโหลดหัวข้อ... --</option>';
+
+            if (!subject) {
+                topicSelect.disabled = true;
+                topicSelect.innerHTML = '<option value="">-- กรุณาเลือกวิชาก่อน --</option>';
+                return;
+            }
+
+            const { data: topics } = await _supabase
+                .from('topics')
+                .select('*')
+                .eq('subject', subject)
+                .order('id', { ascending: true });
+
+            if (!topics || topics.length === 0) {
+                if (selectedTopic) {
+                    topicSelect.disabled = false;
+                    topicSelect.innerHTML = `<option value="${selectedTopic}" selected>${selectedTopic}</option>`;
+                } else {
+                    topicSelect.disabled = true;
+                    topicSelect.innerHTML = '<option value="">-- ยังไม่มีหัวข้อในวิชานี้ (ไปเพิ่มที่เมนูจัดการหัวข้อก่อน) --</option>';
+                }
+                return;
+            }
+
+            topicSelect.disabled = false;
+            topicSelect.innerHTML = '<option value="">-- เลือกหัวข้อเรื่อง --</option>';
+            let foundSelected = false;
+
+            topics.forEach(t => {
+                const isSelected = (t.name === selectedTopic) ? 'selected' : '';
+                if (isSelected) foundSelected = true;
+                topicSelect.innerHTML += `<option value="${t.name}" ${isSelected}>${t.name}</option>`;
+            });
+
+            // กรณีหัวข้อเดิมของข้อสอบถูกลบออกจากตาราง topics ไปแล้ว ให้แสดงเป็นตัวเลือกเดิมไว้ด้วย
+            if (selectedTopic && !foundSelected) {
+                topicSelect.innerHTML += `<option value="${selectedTopic}" selected>${selectedTopic}</option>`;
+            }
+        }
+
+        /* ------------------ ส่วนจัดการบทเรียน (COURSES) ------------------ */
+        async function fetchCourses() {
+            const tableBody = document.getElementById('courses-table-body');
+            const { data: courses } = await _supabase.from('courses').select('*').order('id', { ascending: false });
+            allCourses = courses || [];
+
+            if (allCourses.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">ยังไม่มีบทเรียน</td></tr>`;
+                return;
+            }
+            tableBody.innerHTML = '';
+            allCourses.forEach((item, index) => {
+                const img = item.image_url || 'https://placehold.co/100x70/2563eb/white?text=M.4';
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><img src="${img}" width="50" height="35" style="object-fit:cover; border-radius:4px;"></td>
+                        <td class="fw-bold">${item.title}</td>
+                        <td><span class="badge bg-primary">${item.subject || 'ทั่วไป'}</span></td>
+                        <td>${item.video_url ? '🎥' : ''} ${item.pdf_url ? '📄' : ''}</td>
+                        <td class="text-center">
+                            <button class="btn btn-outline-warning btn-sm rounded-circle me-1" onclick="editCourse(${item.id})" title="แก้ไข">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm rounded-circle" onclick="deleteCourse(${item.id})" title="ลบ">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openAddCourseModal() {
+            document.getElementById('addCourseForm').reset();
+            document.getElementById('course_edit_id').value = '';
+            document.getElementById('courseModalTitle').innerHTML = '<i class="fas fa-plus-circle text-primary me-2"></i>เพิ่มบทเรียนใหม่';
+            document.getElementById('courseSubmitBtn').textContent = 'บันทึกบทเรียน';
+            addCourseModal.show();
+        }
+
+        function editCourse(id) {
+            const course = allCourses.find(c => c.id === id);
+            if (!course) return;
+
+            document.getElementById('course_edit_id').value = course.id;
+            document.getElementById('title').value = course.title || '';
+            document.getElementById('subject').value = course.subject || '';
+            document.getElementById('video_url').value = course.video_url || '';
+            document.getElementById('pdf_url').value = course.pdf_url || '';
+            document.getElementById('image_url').value = course.image_url || '';
+            document.getElementById('description').value = course.description || '';
+
+            document.getElementById('courseModalTitle').innerHTML = '<i class="fas fa-edit text-warning me-2"></i>แก้ไขบทเรียน';
+            document.getElementById('courseSubmitBtn').textContent = 'บันทึกการแก้ไข';
+            addCourseModal.show();
+        }
+
+        async function saveCourse(event) {
+            event.preventDefault();
+            const editId = document.getElementById('course_edit_id').value;
+            const courseData = {
+                title: document.getElementById('title').value,
+                subject: document.getElementById('subject').value,
+                video_url: document.getElementById('video_url').value || null,
+                pdf_url: document.getElementById('pdf_url').value || null,
+                image_url: document.getElementById('image_url').value || null,
+                description: document.getElementById('description').value,
+                type: 'บทเรียน'
+            };
+
+            let error;
+            if (editId) {
+                const res = await _supabase.from('courses').update(courseData).eq('id', editId);
+                error = res.error;
+            } else {
+                const res = await _supabase.from('courses').insert([courseData]);
+                error = res.error;
+            }
+
+            if (error) { alert('เกิดข้อผิดพลาด: ' + error.message); return; }
+
+            alert(editId ? 'แก้ไขบทเรียนสำเร็จ!' : 'เพิ่มบทเรียนสำเร็จ!');
+            document.getElementById('addCourseForm').reset();
+            document.getElementById('course_edit_id').value = '';
+            addCourseModal.hide();
+            fetchCourses();
+        }
+
+        async function deleteCourse(id) {
+            if (confirm('ลบบทเรียนนี้?')) { await _supabase.from('courses').delete().eq('id', id); fetchCourses(); }
+        }
+
+        /* ------------------ ส่วนจัดการข้อสอบ (QUIZZES) ------------------ */
+        async function fetchQuizzes() {
+            const tableBody = document.getElementById('quizzes-table-body');
+            const { data: quizzes } = await _supabase.from('quizzes').select('*').order('id', { ascending: false });
+            allQuizzes = quizzes || [];
+
+            if (allQuizzes.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">ยังไม่มีข้อสอบในระบบ</td></tr>`;
+                return;
+            }
+
+            tableBody.innerHTML = '';
+            const optionLabels = ['ข้อ A', 'ข้อ B', 'ข้อ C', 'ข้อ D'];
+            allQuizzes.forEach((item, index) => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><span class="badge bg-primary">${item.subject}</span></td>
+                        <td><span class="badge bg-info text-dark">${item.topic || 'ทั่วไป'}</span></td>
+                        <td class="fw-bold">${item.question}</td>
+                        <td><span class="badge bg-outline-success border text-dark">${optionLabels[item.correct_option]}</span></td>
+                        <td class="text-center">
+                            <button class="btn btn-outline-warning btn-sm rounded-circle me-1" onclick="editQuiz(${item.id})" title="แก้ไข">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm rounded-circle" onclick="deleteQuiz(${item.id})" title="ลบ">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openAddQuizModal() {
+            document.getElementById('addQuizForm').reset();
+            document.getElementById('quiz_edit_id').value = '';
+            const topicSelect = document.getElementById('quiz_topic');
+            topicSelect.disabled = true;
+            topicSelect.innerHTML = '<option value="">-- กรุณาเลือกวิชาก่อน --</option>';
+
+            document.getElementById('quizModalTitle').innerHTML = '<i class="fas fa-pen-nib me-2"></i>เพิ่มข้อสอบใหม่';
+            document.getElementById('quizModalTitle').className = 'modal-title fw-bold text-success';
+            document.getElementById('quizSubmitBtn').textContent = 'บันทึกข้อสอบ';
+            addQuizModal.show();
+        }
+
+        async function editQuiz(id) {
+            const quiz = allQuizzes.find(q => q.id === id);
+            if (!quiz) return;
+
+            document.getElementById('quiz_edit_id').value = quiz.id;
+            document.getElementById('quiz_subject').value = quiz.subject || '';
+            await loadTopicsForQuizDropdown(quiz.topic || '');
+
+            document.getElementById('quiz_question').value = quiz.question || '';
+            document.getElementById('option_a').value = quiz.option_a || '';
+            document.getElementById('option_b').value = quiz.option_b || '';
+            document.getElementById('option_c').value = quiz.option_c || '';
+            document.getElementById('option_d').value = quiz.option_d || '';
+            document.getElementById('correct_option').value = quiz.correct_option ?? 0;
+            document.getElementById('quiz_explanation').value = quiz.explanation || '';
+
+            document.getElementById('quizModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>แก้ไขข้อสอบ';
+            document.getElementById('quizModalTitle').className = 'modal-title fw-bold text-warning';
+            document.getElementById('quizSubmitBtn').textContent = 'บันทึกการแก้ไข';
+            addQuizModal.show();
+        }
+
+        async function saveQuiz(event) {
+            event.preventDefault();
+            const editId = document.getElementById('quiz_edit_id').value;
+            const quizData = {
+                subject: document.getElementById('quiz_subject').value,
+                topic: document.getElementById('quiz_topic').value,
+                question: document.getElementById('quiz_question').value,
+                option_a: document.getElementById('option_a').value,
+                option_b: document.getElementById('option_b').value,
+                option_c: document.getElementById('option_c').value,
+                option_d: document.getElementById('option_d').value,
+                correct_option: parseInt(document.getElementById('correct_option').value),
+                explanation: document.getElementById('quiz_explanation').value
+            };
+
+            let error;
+            if (editId) {
+                const res = await _supabase.from('quizzes').update(quizData).eq('id', editId);
+                error = res.error;
+            } else {
+                const res = await _supabase.from('quizzes').insert([quizData]);
+                error = res.error;
+            }
+
+            if (error) { alert('เกิดข้อผิดพลาด: ' + error.message); return; }
+            
+            alert(editId ? 'แก้ไขข้อสอบสำเร็จ!' : 'เพิ่มข้อสอบสำเร็จ!');
+            document.getElementById('addQuizForm').reset();
+            document.getElementById('quiz_edit_id').value = '';
+            document.getElementById('quiz_topic').disabled = true;
+            addQuizModal.hide();
+            fetchQuizzes();
+        }
+
+        async function deleteQuiz(id) {
+            if (confirm('ลบข้อสอบข้อนี้?')) { await _supabase.from('quizzes').delete().eq('id', id); fetchQuizzes(); }
+        }
+
+        fetchCourses();
+    </script>
+</body>
+
+</html>

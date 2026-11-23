@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรไฟล์ของฉัน - M.4 PREP</title>
+
+    <!-- Google Fonts & Font Awesome & Bootstrap -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .profile-avatar-circle {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0 auto 15px auto;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+        }
+
+        .stat-card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            border: 1px solid #f1f5f9;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="index.html">
+                <i class="fas fa-book-reader me-2"></i>M.4 PREP
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto ms-lg-4">
+                    <li class="nav-item"><a class="nav-link" href="index.html">หน้าแรก</a></li>
+                    <li class="nav-item"><a class="nav-link" href="subject.html?subject=math">วิชาเรียน</a></li>
+                    <li class="nav-item"><a class="nav-link" href="quiz.html">คลังข้อสอบ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="summary.html">สรุปเนื้อหา</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="profile.html" class="btn btn-outline-primary btn-sm rounded-pill px-3 active">
+                        <i class="fas fa-user-circle me-1"></i>โปรไฟล์
+                    </a>
+                    <button onclick="handleLogout()" class="btn btn-light btn-sm rounded-pill border text-danger">
+                        <i class="fas fa-sign-out-alt me-1"></i>ออก
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Banner -->
+    <header class="study-header text-center bg-math">
+        <div class="container">
+            <h2 class="fw-bold mb-1">ข้อมูลส่วนตัว & ประวัติการเรียน</h2>
+            <p class="lead opacity-75 small mb-0">ติดตามความก้าวหน้าและการทำแบบทดสอบของคุณ</p>
+        </div>
+    </header>
+
+    <!-- Main Profile Area -->
+    <main class="container my-4 study-container mb-5">
+        <div class="row g-4">
+            
+            <!-- Sidebar / User Info Card -->
+            <div class="col-lg-4">
+                <div class="content-card text-center p-4">
+                    <div class="profile-avatar-circle" id="userAvatar">U</div>
+                    <h4 class="fw-bold mb-1" id="userName">กำลังโหลด...</h4>
+                    <p class="text-muted small mb-2" id="userEmail">loading@email.com</p>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 mb-3" id="userRole">
+                        <i class="fas fa-user-graduate me-1"></i>นักเรียน
+                    </span>
+                    <hr class="my-3">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary rounded-pill btn-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                            <i class="fas fa-edit me-1"></i>แก้ไขข้อมูลส่วนตัว
+                        </button>
+                        <button class="btn btn-outline-secondary rounded-pill btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                            <i class="fas fa-key me-1"></i>เปลี่ยนรหัสผ่าน
+                        </button>
+                        <button onclick="handleLogout()" class="btn btn-outline-danger rounded-pill btn-sm mt-2">
+                            <i class="fas fa-sign-out-alt me-1"></i>ออกจากระบบ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats & History Content -->
+            <div class="col-lg-8">
+                
+                <!-- Stat Cards Row -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-4">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-primary-subtle text-primary">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h3 class="fw-bold mb-0" id="statQuizCount">0</h3>
+                            <small class="text-muted">ชุดแบบทดสอบที่ทำ</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-success-subtle text-success">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3 class="fw-bold mb-0" id="statAvgScore">0%</h3>
+                            <small class="text-muted">คะแนนเฉลี่ยรวม</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-warning-subtle text-warning">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <h3 class="fw-bold mb-0" id="statReadCount">0</h3>
+                            <small class="text-muted">บทเรียนที่อ่านแล้ว</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiz History Table -->
+                <div class="content-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0"><i class="fas fa-history text-primary me-2"></i>ประวัติการทำแบบทดสอบล่าสุด</h5>
+                        <a href="quiz.html" class="btn btn-sm btn-link text-decoration-none">ทำแบบทดสอบเพิ่ม <i class="fas fa-arrow-right ms-1"></i></a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ชุดแบบทดสอบ / วิชา</th>
+                                    <th class="text-center">คะแนนที่ได้</th>
+                                    <th class="text-center">วันที่ทำ</th>
+                                    <th class="text-end">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2"></div> กำลังดึงประวัติการทำแบบทดสอบ...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Edit Profile -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-custom">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-user-edit text-primary me-2"></i>แก้ไขข้อมูลส่วนตัว</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProfileForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">ชื่อ-นามสกุล</label>
+                            <input type="text" id="editFullName" class="form-control rounded-pill px-3" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary rounded-pill w-100 fw-bold">บันทึกการเปลี่ยนแปลง</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Change Password -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-custom">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-key text-warning me-2"></i>เปลี่ยนรหัสผ่าน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">รหัสผ่านใหม่</label>
+                            <input type="password" id="newPassword" class="form-control rounded-pill px-3" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-warning text-white rounded-pill w-100 fw-bold">อัปเดตรหัสผ่าน</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+
+    <script>
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initProfilePage();
+        });
+
+        async function initProfilePage() {
+            try {
+                // เช็คการ Login
+                const { data: { user }, error } = await _supabase.auth.getUser();
+
+                if (error || !user) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                currentUser = user;
+                renderUserInfo(user);
+                loadQuizHistory(user.id);
+
+            } catch (err) {
+                console.error('Profile Init Error:', err);
+            }
+        }
+
+        function renderUserInfo(user) {
+            const fullName = user.user_metadata?.full_name || user.email.split('@')[0];
+            const email = user.email;
+            const initial = fullName.charAt(0).toUpperCase();
+
+            document.getElementById('userName').innerText = fullName;
+            document.getElementById('userEmail').innerText = email;
+            document.getElementById('userAvatar').innerText = initial;
+            document.getElementById('editFullName').value = fullName;
+
+            if (user.user_metadata?.role === 'admin') {
+                document.getElementById('userRole').className = 'badge bg-danger-subtle text-danger rounded-pill px-3 py-2 mb-3';
+                document.getElementById('userRole').innerHTML = '<i class="fas fa-user-shield me-1"></i>ผู้ดูแลระบบ';
+            }
+        }
+
+        async function loadQuizHistory(userId) {
+            try {
+                // ดึงข้อมูลประวัติแบบทดสอบจากตาราง quiz_results
+                const { data, error } = await _supabase
+                    .from('quiz_results')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false });
+
+                const tbody = document.getElementById('historyTableBody');
+
+                if (error || !data || data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                <i class="fas fa-info-circle me-1"></i> ยังไม่มีประวัติการทำแบบทดสอบ
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                // สรุปสถิติ
+                document.getElementById('statQuizCount').innerText = data.length;
+                const totalScore = data.reduce((acc, curr) => acc + (curr.percentage || 0), 0);
+                const avgScore = Math.round(totalScore / data.length);
+                document.getElementById('statAvgScore').innerText = `${avgScore}%`;
+
+                // Render ตาราง
+                tbody.innerHTML = data.map(item => {
+                    const pass = (item.percentage >= 50);
+                    const subKey = getSubjectKey(item.subject || item.title);
+                    const config = SUBJECT_CONFIG[subKey] || SUBJECT_CONFIG['other'];
+                    const dateStr = new Date(item.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+
+                    return `
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">${item.quiz_title || item.title || 'แบบทดสอบทบทวน'}</div>
+                                <span class="badge ${config.badgeClass} rounded-pill me-1" style="font-size: 0.75rem;">${config.name}</span>
+                            </td>
+                            <td class="text-center fw-bold ${pass ? 'text-success' : 'text-danger'}">
+                                ${item.score} / ${item.total_score} (${item.percentage}%)
+                            </td>
+                            <td class="text-center text-muted small">${dateStr}</td>
+                            <td class="text-end">
+                                <span class="badge ${pass ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'} rounded-pill">
+                                    ${pass ? 'ผ่าน' : 'ควรทบทวนเพิ่ม'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.warn('Cannot fetch quiz history:', err);
+                document.getElementById('historyTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            เริ่มต้นทำแบบทดสอบเพื่อดูสถิติของคุณที่นี่
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // แก้ไขข้อมูลชื่อ
+        document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newName = document.getElementById('editFullName').value.trim();
+
+            try {
+                const { error } = await _supabase.auth.updateUser({
+                    data: { full_name: newName }
+                });
+
+                if (error) throw error;
+
+                alert('อัปเดตข้อมูลสำเร็จ!');
+                location.reload();
+            } catch (err) {
+                alert('เกิดข้อผิดพลาด: ' + err.message);
+            }
+        });
+
+        // เปลี่ยนรหัสผ่าน
+        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPass = document.getElementById('newPassword').value;
+
+            try {
+                const { error } = await _supabase.auth.updateUser({ password: newPass });
+                if (error) throw error;
+
+                alert('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+                modal.hide();
+            } catch (err) {
+                alert('เกิดข้อผิดพลาด: ' + err.message);
+            }
+        });
+
+        // ออกจากระบบ
+        async function handleLogout() {
+            if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+                await _supabase.auth.signOut();
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+
+</html>
