@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-bs-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -14,11 +14,19 @@
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- โหลดค่าธีม Dark/Light Mode -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('m4prep_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
+
     <style>
         body {
             font-family: 'Prompt', sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
         }
 
         .study-header {
@@ -30,12 +38,12 @@
         }
 
         .content-card {
-            background-color: #ffffff;
+            background-color: var(--bs-card-bg);
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
             padding: 35px;
             margin-top: -30px;
-            border: none;
+            border: 1px solid var(--bs-border-color-translucent);
         }
 
         .badge-subject {
@@ -46,54 +54,54 @@
 
         /* ตกแต่งตัวเลือกข้อสอบ */
         .question-item {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
+            background-color: var(--bs-body-bg);
+            border: 1px solid var(--bs-border-color);
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 24px;
         }
 
         .option-box {
-            border: 2px solid #e2e8f0;
+            border: 2px solid var(--bs-border-color);
             border-radius: 12px;
             padding: 14px 18px;
             margin-bottom: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
-            background-color: #fff;
+            background-color: var(--bs-card-bg);
             display: flex;
             align-items: center;
         }
 
         .option-box:hover:not(.disabled) {
             border-color: #2563eb;
-            background-color: #f0f7ff;
+            background-color: rgba(37, 99, 235, 0.08);
         }
 
         .option-box.selected {
             border-color: #2563eb;
-            background-color: #eff6ff;
+            background-color: rgba(37, 99, 235, 0.14);
             font-weight: 600;
         }
 
         .option-box.is-correct {
             border-color: #16a34a !important;
-            background-color: #dcfce7 !important;
-            color: #15803d;
+            background-color: rgba(22, 163, 74, 0.15) !important;
+            color: #16a34a;
             font-weight: 600;
         }
 
         .option-box.is-wrong {
             border-color: #dc2626 !important;
-            background-color: #fee2e2 !important;
-            color: #b91c1c;
+            background-color: rgba(220, 38, 38, 0.15) !important;
+            color: #dc2626;
         }
 
         .option-prefix {
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background-color: #f1f5f9;
+            background-color: var(--bs-tertiary-bg);
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -103,7 +111,7 @@
         }
 
         .explanation-box {
-            background-color: #f8fafc;
+            background-color: var(--bs-tertiary-bg);
             border-left: 4px solid #2563eb;
             border-radius: 8px;
             padding: 15px 20px;
@@ -111,7 +119,7 @@
         }
 
         .action-box {
-            background-color: #f1f5f9;
+            background-color: var(--bs-tertiary-bg);
             border-radius: 16px;
             padding: 20px;
         }
@@ -121,14 +129,19 @@
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="index.html">
                 <i class="fas fa-edit me-2"></i>M.4 PREP QUIZ
             </a>
-            <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill">
-                <i class="fas fa-arrow-left me-1"></i>กลับหน้าคลังข้อสอบ
-            </a>
+            <div class="d-flex gap-2">
+                <a href="analytics.html" class="btn btn-outline-primary btn-sm rounded-pill">
+                    <i class="fas fa-chart-pie me-1"></i>วิเคราะห์คะแนน
+                </a>
+                <a href="summary.html?mode=quiz" class="btn btn-outline-secondary btn-sm rounded-pill">
+                    <i class="fas fa-arrow-left me-1"></i>กลับหน้าคลังข้อสอบ
+                </a>
+            </div>
         </div>
     </nav>
 
@@ -172,40 +185,52 @@
         };
 
         let questionsData = [];
-        let userAnswers = {}; // { 0: choiceIndex, 1: choiceIndex }
+        let userAnswers = {};
         let isSubmitted = false;
 
-        // ฟังก์ชันระบุหมวดวิชาให้รองรับหลากหลายรูปแบบ
+        // ตัวแปรส่วนกลางสำหรับเก็บข้อมูลวิชา, ชื่อชุดข้อสอบ และหัวข้อสำรอง
+        let currentSubjectKey = 'other';
+        let currentExamSetTitle = 'แบบทดสอบทั่วไป';
+        let currentFallbackTopic = 'แบบทดสอบทั่วไป';
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&')
+                .replace(/</g, '<')
+                .replace(/>/g, '>')
+                .replace(/"/g, '"');
+        }
+
         function getSubjectKey(item) {
             if (!item) return 'other';
 
             const directVal = String(
                 (typeof item === 'string' ? item : '') ||
-                item.subject || 
-                item.subject_id || 
-                item.category || 
-                item.subject_name || 
-                item.type || 
-                item.course_type || 
+                item.subject ||
+                item.subject_id ||
+                item.category ||
+                item.subject_name ||
+                item.type ||
+                item.course_type ||
                 ''
             ).toLowerCase().trim();
 
             if (
-                directVal === 'science' || 
-                directVal === 'sci' || 
-                directVal === 'วิทย์' || 
-                directVal === 'วิทยาศาสตร์' || 
-                directVal === '2' || 
-                directVal.includes('sci') || 
+                directVal === 'science' ||
+                directVal === 'sci' ||
+                directVal === 'วิทย์' ||
+                directVal === 'วิทยาศาสตร์' ||
+                directVal === '2' ||
+                directVal.includes('sci') ||
                 directVal.includes('วิทย์')
             ) {
                 return 'science';
             }
 
-            if (directVal === 'math' || directVal === 'คณิต' || directVal === 'คณิตศาสตร์' || directVal === '1') return 'math';
-            if (directVal === 'english' || directVal === 'eng' || directVal === 'ภาษาอังกฤษ' || directVal === '3') return 'english';
-            if (directVal === 'thai' || directVal === 'ภาษาไทย' || directVal === 'ไทย' || directVal === '4') return 'thai';
-            if (directVal === 'society' || directVal === 'soc' || directVal === 'สังคมศึกษา' || directVal === 'สังคม' || directVal === '5') return 'society';
+            if (directVal === 'math' || directVal === 'คณิต' || directVal === 'คณิตศาสตร์' || directVal === '1' || directVal.includes('คณิต')) return 'math';
+            if (directVal === 'english' || directVal === 'eng' || directVal === 'ภาษาอังกฤษ' || directVal === '3' || directVal.includes('อังกฤษ')) return 'english';
+            if (directVal === 'thai' || directVal === 'ภาษาไทย' || directVal === 'ไทย' || directVal === '4' || directVal.includes('ไทย')) return 'thai';
+            if (directVal === 'society' || directVal === 'soc' || directVal === 'สังคมศึกษา' || directVal === 'สังคม' || directVal === '5' || directVal.includes('สังคม')) return 'society';
 
             const textContent = (String(item.title || item.name || item.topic || '') + ' ' + String(item.description || item.detail || '')).toLowerCase();
 
@@ -218,64 +243,102 @@
             return 'other';
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await _supabase.auth.getSession();
+            const userEmail = session?.user?.email || localStorage.getItem('user_email');
+
+            if (!userEmail) {
+                document.getElementById('headerContainer').innerHTML = `<h3 class="fw-bold text-warning">จำกัดสิทธิ์โหมดทดลองเรียน</h3>`;
+                document.getElementById('mainContentCard').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-lock text-primary display-4 mb-3"></i>
+                        <h4 class="fw-bold mb-2">กรุณาเข้าสู่ระบบก่อนทำข้อสอบ</h4>
+                        <p class="text-secondary mb-4">เพื่อให้ระบบสามารถบันทึกคะแนนและวิเคราะห์จุดอ่อน-จุดแข็งของคุณได้</p>
+                        <a href="login.html" class="btn btn-primary rounded-pill px-4 me-2">เข้าสู่ระบบเลย</a>
+                        <a href="summary.html?mode=summary" class="btn btn-outline-secondary rounded-pill px-4">กลับไปอ่านสรุป</a>
+                    </div>
+                `;
+                return;
+            }
+
             loadQuizData();
         });
 
-        // 1. ดึงข้อมูลข้อสอบตาม Parameter ใน URL
+        // 1. ดึงข้อมูลข้อสอบ (รองรับทั้งแบบเลือกตามชุด exam_set และเลือกตามหัวข้อ topic)
         async function loadQuizData() {
             const params = new URLSearchParams(window.location.search);
+            const rawExamSet = params.get('exam_set') || params.get('set');
             const topicIdParam = params.get('topic_id') || params.get('id');
             const rawTopicName = params.get('topic_name') || params.get('topic');
             const rawSubject = params.get('subject');
 
             try {
                 let quizList = [];
-                let topicTitle = rawTopicName || 'แบบทดสอบตะลุยโจทย์';
+                let displayTitle = rawExamSet || rawTopicName || 'แบบทดสอบตะลุยโจทย์';
                 let subjectName = rawSubject || '';
 
-                // Step 1: ถ้าเป็น ID แบบตัวเลข ให้ดึงจากตาราง topics ก่อน
-                if (topicIdParam && !isNaN(topicIdParam)) {
+                const { data: allQuizzes, error } = await _supabase
+                    .from('quizzes')
+                    .select('*')
+                    .order('id', { ascending: true });
+
+                if (error) throw error;
+                const quizzesPool = allQuizzes || [];
+
+                // กรองวิชาเบื้องต้นหากมีการส่ง subject มาใน URL
+                const subjectFilteredPool = rawSubject
+                    ? quizzesPool.filter(q => getSubjectKey(q) === getSubjectKey(rawSubject))
+                    : quizzesPool;
+
+                // กรณีที่ 1: ส่งชื่อชุดข้อสอบ (exam_set) มาโดยตรง
+                if (rawExamSet) {
+                    const targetSet = rawExamSet.trim().toLowerCase();
+                    quizList = subjectFilteredPool.filter(q => {
+                        const qSet = String(q.exam_set || q.topic || '').trim().toLowerCase();
+                        return qSet === targetSet;
+                    });
+                    displayTitle = rawExamSet.trim();
+                }
+
+                // กรณีที่ 2: ส่ง topic_id มาเป็นตัวเลข
+                if (quizList.length === 0 && topicIdParam && !isNaN(topicIdParam)) {
                     const { data: topicData } = await _supabase.from('topics').select('*').eq('id', topicIdParam).maybeSingle();
                     if (topicData) {
-                        topicTitle = topicData.title || topicData.name || topicData.topic_name || topicTitle;
+                        displayTitle = topicData.title || topicData.name || topicData.topic_name || displayTitle;
                         subjectName = topicData.subject || topicData.subject_id || subjectName;
                     }
-
-                    // ดึงข้อสอบที่ตรงกับ topic_id
-                    const resQuizzes = await _supabase.from('quizzes').select('*').eq('topic_id', topicIdParam);
-                    if (resQuizzes.data && resQuizzes.data.length > 0) {
-                        quizList = resQuizzes.data;
-                    }
+                    quizList = subjectFilteredPool.filter(q => String(q.topic_id || '') === String(topicIdParam));
                 }
 
-                // Step 2: หากค้นหาจาก ID ไม่เจอ ให้ค้นหาข้อสอบจาก Supabase ทั้งหมดแล้วกรองเทียบชื่อ/ID
-                if (quizList.length === 0) {
-                    const searchTitle = rawTopicName || topicTitle || topicIdParam;
-                    const resAll = await _supabase.from('quizzes').select('*');
-                    const allQuizzes = resAll.data || [];
+                // กรณีที่ 3: ส่งชื่อ topic หรือชื่อชุดผ่านพารามิเตอร์ topic / topic_name
+                if (quizList.length === 0 && (rawTopicName || topicIdParam)) {
+                    const searchName = String(rawTopicName || displayTitle || topicIdParam).trim().toLowerCase();
 
-                    if (searchTitle) {
-                        const targetSearch = String(searchTitle).trim().toLowerCase();
-                        const targetId = String(topicIdParam || '').trim();
+                    // เช็กก่อนว่าชื่อที่ส่งมาตรงกับชื่อชุดข้อสอบ (exam_set) หรือไม่
+                    const matchedBySet = subjectFilteredPool.filter(q => {
+                        const qSet = String(q.exam_set || '').trim().toLowerCase();
+                        return qSet && qSet === searchName;
+                    });
 
-                        quizList = allQuizzes.filter(q => {
-                            const qTopicId = String(q.topic_id || '');
+                    if (matchedBySet.length > 0) {
+                        quizList = matchedBySet;
+                        displayTitle = matchedBySet[0].exam_set;
+                    } else {
+                        // ถ้าไม่ตรงกับ exam_set ให้หาตามชื่อหัวข้อเรื่อง (topic)
+                        quizList = subjectFilteredPool.filter(q => {
                             const qTopicName = String(q.topic_name || q.topic || q.topic_title || '').trim().toLowerCase();
-
-                            return (targetId && qTopicId === targetId) ||
-                                   (qTopicName && (qTopicName === targetSearch || qTopicName.includes(targetSearch) || targetSearch.includes(qTopicName)));
+                            return qTopicName && (qTopicName === searchName || qTopicName.includes(searchName) || searchName.includes(qTopicName));
                         });
                     }
-
-                    // Fallback กรณีหาไม่เจอจริงๆ แต่มีระบุวิชามา ให้ดึงข้อสอบในวิชานั้นๆ
-                    if (quizList.length === 0 && rawSubject) {
-                        const targetSubKey = getSubjectKey(rawSubject);
-                        quizList = allQuizzes.filter(q => getSubjectKey(q) === targetSubKey);
-                    }
                 }
 
-                // ถ้าค้นหาไม่พบข้อสอบในระบบ
+                // กรณีที่ 4: ส่งมาเฉพาะชื่อวิชา (ทำรวมทั้งวิชา)
+                if (quizList.length === 0 && rawSubject) {
+                    quizList = subjectFilteredPool;
+                    const subCfg = subjectConfig[getSubjectKey(rawSubject)];
+                    displayTitle = `ข้อสอบรวมวิชา${subCfg ? subCfg.name : rawSubject}`;
+                }
+
                 if (quizList.length === 0) {
                     renderError('ไม่พบชุดข้อสอบของหัวข้อนี้ในระบบ กรุณากลับไปเลือกวิชาใหม่อีกครั้ง');
                     return;
@@ -286,7 +349,16 @@
                     subjectName = quizList[0].subject || quizList[0].subject_id || getSubjectKey(quizList[0]);
                 }
 
-                renderHeaderUI(topicTitle, subjectName);
+                currentSubjectKey = getSubjectKey(subjectName);
+                currentExamSetTitle = rawExamSet || displayTitle;
+                currentFallbackTopic = rawTopicName || displayTitle;
+
+                // นับจำนวนหัวข้อที่อยู่ในชุดข้อสอบนี้ เพื่อแสดงข้อมูลใน Header
+                const uniqueTopics = [...new Set(
+                    questionsData.map(q => String(q.topic || q.topic_name || '').trim()).filter(Boolean)
+                )];
+
+                renderHeaderUI(displayTitle, subjectName, uniqueTopics);
                 renderQuizQuestions();
 
             } catch (err) {
@@ -295,25 +367,30 @@
             }
         }
 
-        // 2. แสดงผล Header วิชาและหัวข้อ
-        function renderHeaderUI(topicTitle, rawSubject) {
+        // 2. แสดงผล Header วิชา ชื่อชุดข้อสอบ และหัวข้อที่ครอบคลุม
+        function renderHeaderUI(displayTitle, rawSubject, uniqueTopics = []) {
             const subKey = getSubjectKey(rawSubject);
             const config = subjectConfig[subKey] || subjectConfig['other'];
 
+            const topicsSummaryText = uniqueTopics.length > 1
+                ? `<div class="mt-2 small text-white-50"><i class="fas fa-tags me-1"></i>ครอบคลุม ${uniqueTopics.length} หัวข้อ: ${escapeHtml(uniqueTopics.join(', '))}</div>`
+                : '';
+
             document.getElementById('headerContainer').innerHTML = `
                 <span class="badge badge-subject ${config.badgeClass} mb-2">
-                    <i class="fas ${config.icon} me-1"></i>${config.name}
+                    <i class="fas ${config.icon} me-1"></i>${escapeHtml(config.name)}
                 </span>
-                <h2 class="fw-bold mb-2">${topicTitle}</h2>
+                <h2 class="fw-bold mb-2">${escapeHtml(displayTitle)}</h2>
                 <p class="lead opacity-75 small mb-0">แบบทดสอบประเมินความรู้ ตะลุยโจทย์เตรียมสอบเข้า ม.4 (จำนวน ${questionsData.length} ข้อ)</p>
+                ${topicsSummaryText}
             `;
         }
 
-        // 3. แปลงโครงสร้าง Choice ใน Supabase ให้ยืดหยุ่น
+        // 3. แปลงโครงสร้าง Choice ใน Supabase
         function getQuestionChoices(q) {
             if (Array.isArray(q.options) && q.options.length > 0) return q.options;
             if (Array.isArray(q.choices) && q.choices.length > 0) return q.choices;
-            
+
             let choices = [];
             if (q.option_a !== undefined && q.option_a !== null) choices.push(q.option_a);
             if (q.option_b !== undefined && q.option_b !== null) choices.push(q.option_b);
@@ -329,11 +406,10 @@
             return choices;
         }
 
-        // แปลงข้อถูกให้เป็น Index (0, 1, 2, 3)
         function getCorrectAnswerIndex(q, choices) {
-            const ans = q.correct_answer !== undefined ? q.correct_answer : 
-                        (q.answer !== undefined ? q.answer : 
-                        (q.correct !== undefined ? q.correct : q.correct_option));
+            const ans = q.correct_answer !== undefined ? q.correct_answer :
+                (q.answer !== undefined ? q.answer :
+                    (q.correct !== undefined ? q.correct : q.correct_option));
             if (ans === undefined || ans === null) return 0;
 
             if (typeof ans === 'number') {
@@ -350,6 +426,11 @@
             return idx !== -1 ? idx : 0;
         }
 
+        // ดึงชื่อหัวข้อเรื่องของโจทย์แต่ละข้อ
+        function getQuestionTopicName(q) {
+            return String(q.topic || q.topic_name || q.topic_title || currentFallbackTopic || 'ข้อสอบทั่วไป').trim();
+        }
+
         // 4. Render รายการข้อสอบ
         function renderQuizQuestions() {
             const container = document.getElementById('mainContentCard');
@@ -358,7 +439,7 @@
                 <div class="action-box mb-4 d-flex align-items-center justify-content-between">
                     <div>
                         <h6 class="fw-bold mb-1"><i class="fas fa-info-circle text-primary me-2"></i>คำชี้แจงในการทำข้อสอบ</h6>
-                        <small class="text-muted">เลือกคำตอบที่ถูกต้องที่สุดเพียงข้อเดียว เมื่อทำเสร็จแล้วให้กดปุ่ม "ส่งคำตอบและตรวจคะแนน"</small>
+                        <small class="text-secondary">เลือกคำตอบที่ถูกต้องที่สุดเพียงข้อเดียว เมื่อทำเสร็จแล้วระบบจะวิเคราะห์จุดอ่อนแยกตามหัวข้อเรื่องให้ทันที</small>
                     </div>
                 </div>
                 <div id="questionsContainer">
@@ -367,15 +448,21 @@
             questionsData.forEach((q, qIndex) => {
                 const choices = getQuestionChoices(q);
                 const questionText = q.question || q.question_text || q.title || `ข้อที่ ${qIndex + 1}`;
+                const qTopic = getQuestionTopicName(q);
                 const prefixes = ['ก', 'ข', 'ค', 'ง', 'จ'];
                 const qImage = q.image_url || q.image || q.img;
 
                 html += `
                     <div class="question-item" id="q_card_${qIndex}">
-                        <h5 class="fw-bold mb-3">
-                            <span class="badge bg-primary me-2">${qIndex + 1}</span>
-                            ${questionText}
-                        </h5>
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                            <h5 class="fw-bold mb-0">
+                                <span class="badge bg-primary me-2">${qIndex + 1}</span>
+                                ${escapeHtml(questionText)}
+                            </h5>
+                            <span class="badge bg-info-subtle text-info-emphasis rounded-pill fw-normal px-3 py-1">
+                                <i class="fas fa-tag me-1"></i>เรื่อง: ${escapeHtml(qTopic)}
+                            </span>
+                        </div>
                         ${qImage ? `<div class="mb-3"><img src="${qImage}" class="img-fluid rounded" style="max-height:300px;"></div>` : ''}
 
                         <div class="options-list">
@@ -385,7 +472,7 @@
                     html += `
                         <div class="option-box" id="opt_${qIndex}_${cIndex}" onclick="selectOption(${qIndex}, ${cIndex})">
                             <span class="option-prefix">${prefixes[cIndex] || (cIndex + 1)}</span>
-                            <span>${choice}</span>
+                            <span>${escapeHtml(choice)}</span>
                         </div>
                     `;
                 });
@@ -408,7 +495,7 @@
 
                 <hr class="my-4">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="index.html" class="btn btn-outline-primary rounded-pill">
+                    <a href="summary.html?mode=quiz" class="btn btn-outline-primary rounded-pill">
                         <i class="fas fa-arrow-left me-1"></i>กลับไปคลังข้อสอบ
                     </a>
                     <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="btn btn-light rounded-pill border">
@@ -422,11 +509,10 @@
 
         // 5. เลือกคำตอบ
         function selectOption(qIndex, cIndex) {
-            if (isSubmitted) return; // หากส่งคำตอบแล้วกดเปลี่ยนไม่ได้
+            if (isSubmitted) return;
 
             userAnswers[qIndex] = cIndex;
 
-            // ปรับ Style ปุ่มเลือก
             const choices = getQuestionChoices(questionsData[qIndex]);
             choices.forEach((_, idx) => {
                 const optEl = document.getElementById(`opt_${qIndex}_${idx}`);
@@ -440,11 +526,58 @@
             });
         }
 
-        // 6. ตรวจคำตอบและคำนวณคะแนน
-        function submitQuiz() {
+        // 6. บันทึกคะแนนลง Supabase แยกตามหัวข้อเรื่อง (topic) ของโจทย์แต่ละข้อ
+        async function saveScoresByTopicToSupabase(topicBreakdownList) {
+            try {
+                const { data: { session } } = await _supabase.auth.getSession();
+                if (!session || !session.user) {
+                    console.warn('ไม่พบ Supabase Auth Session ของผู้ใช้');
+                    return { saved: false, reason: 'ไม่พบสถานะการเข้าสู่ระบบใน Supabase Auth (กรุณาเข้าสู่ระบบใหม่อีกครั้ง)' };
+                }
+
+                // สร้างรายการบันทึกแยกตามแต่ละหัวข้อเรื่อง (topic)
+                const rowsWithExamSet = topicBreakdownList.map(item => ({
+                    user_id: session.user.id,
+                    subject: currentSubjectKey,
+                    exam_set: currentExamSetTitle,
+                    topic: item.topic,
+                    score: item.score,
+                    total_questions: item.total
+                }));
+
+                let { error } = await _supabase
+                    .from('exam_results')
+                    .insert(rowsWithExamSet);
+
+                // กรณีฐานข้อมูลยังไม่มีคอลัมน์ exam_set ให้บันทึกแบบไม่มีคอลัมน์ exam_set อัตโนมัติ
+                if (error && String(error.message || '').includes('exam_set')) {
+                    const fallbackRows = topicBreakdownList.map(item => ({
+                        user_id: session.user.id,
+                        subject: currentSubjectKey,
+                        topic: item.topic,
+                        score: item.score,
+                        total_questions: item.total
+                    }));
+                    const retryRes = await _supabase.from('exam_results').insert(fallbackRows);
+                    error = retryRes.error;
+                }
+
+                if (error) {
+                    console.error('Supabase insert error:', error);
+                    return { saved: false, reason: error.message };
+                }
+
+                return { saved: true };
+            } catch (err) {
+                console.error('Save score exception:', err);
+                return { saved: false, reason: err.message };
+            }
+        }
+
+        // 7. ตรวจคำตอบ คำนวณคะแนนแยกตามหัวข้อ และบันทึกลงฐานข้อมูล
+        async function submitQuiz() {
             if (isSubmitted) return;
 
-            // ตรวจสอบว่าทำครบทุกข้อหรือยัง
             const unanswered = questionsData.findIndex((_, idx) => userAnswers[idx] === undefined);
             if (unanswered !== -1) {
                 if (!confirm(`คุณยังไม่ได้ทำข้อที่ ${unanswered + 1} ยืนยันที่จะส่งคำตอบหรือไม่?`)) {
@@ -454,18 +587,34 @@
             }
 
             isSubmitted = true;
-            let score = 0;
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>กำลังตรวจและบันทึกคะแนน...';
+
+            let totalScore = 0;
+            const topicStatsMap = {}; // เก็บคะแนนแยกตามหัวข้อเรื่อง (topic)
 
             questionsData.forEach((q, qIndex) => {
                 const choices = getQuestionChoices(q);
                 const correctIdx = getCorrectAnswerIndex(q, choices);
                 const userIdx = userAnswers[qIndex];
+                const isCorrect = (userIdx === correctIdx);
 
-                if (userIdx === correctIdx) {
-                    score++;
+                if (isCorrect) {
+                    totalScore++;
                 }
 
-                // แสดงผลลัพธ์บน Choice
+                // สะสมคะแนนตามหัวข้อเรื่องของข้อนี้
+                const qTopic = getQuestionTopicName(q);
+                if (!topicStatsMap[qTopic]) {
+                    topicStatsMap[qTopic] = { topic: qTopic, score: 0, total: 0 };
+                }
+                topicStatsMap[qTopic].total += 1;
+                if (isCorrect) {
+                    topicStatsMap[qTopic].score += 1;
+                }
+
                 choices.forEach((_, cIndex) => {
                     const optEl = document.getElementById(`opt_${qIndex}_${cIndex}`);
                     if (optEl) {
@@ -480,30 +629,66 @@
                     }
                 });
 
-                // แสดง เฉลย/คำอธิบาย
                 const expText = q.explanation || q.explain || q.detail;
                 if (expText) {
                     document.getElementById(`explanation_${qIndex}`).innerHTML = `
                         <div class="explanation-box">
                             <strong class="text-primary"><i class="fas fa-lightbulb me-1"></i>คำอธิบายเฉลย:</strong>
-                            <p class="mb-0 small mt-1 text-secondary">${expText}</p>
+                            <p class="mb-0 small mt-1 text-secondary">${escapeHtml(expText)}</p>
                         </div>
                     `;
                 }
             });
 
-            // แสดงกล่องสรุปคะแนนด้านบนสุด
-            const percentage = Math.round((score / questionsData.length) * 100);
+            const topicBreakdownList = Object.values(topicStatsMap);
+
+            // บันทึกคะแนนแยกตามหัวข้อเรื่องลงตาราง exam_results
+            const saveStatus = await saveScoresByTopicToSupabase(topicBreakdownList);
+
+            const statusAlertHTML = saveStatus.saved
+                ? `<div class="text-success small fw-bold mt-2"><i class="fas fa-check-circle me-1"></i>บันทึกคะแนนแยกตามหัวข้อเรื่องลงระบบวิเคราะห์ผลการเรียนแล้ว</div>`
+                : `<div class="text-danger small fw-bold mt-2"><i class="fas fa-exclamation-triangle me-1"></i>บันทึกคะแนนไม่สำเร็จ: ${escapeHtml(saveStatus.reason)}</div>`;
+
+            // สร้างกล่องสรุปคะแนนแยกตามแต่ละหัวข้อเรื่องในชุดข้อสอบนี้
+            const topicBreakdownHTML = `
+                <div class="mt-3 text-start bg-body p-3 rounded-3 border mx-auto" style="max-width: 600px;">
+                    <div class="fw-bold small text-secondary mb-2">
+                        <i class="fas fa-layer-group text-primary me-1"></i>ผลคะแนนแยกตามหัวข้อเรื่องในชุดนี้:
+                    </div>
+                    ${topicBreakdownList.map(item => {
+                        const pct = item.total > 0 ? Math.round((item.score / item.total) * 100) : 0;
+                        const isWeak = pct < 60;
+                        return `
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <span class="fw-bold">${escapeHtml(item.topic)}</span>
+                                    ${isWeak ? '<span class="badge bg-danger-subtle text-danger ms-2">ควรทบทวนเพิ่ม</span>' : '<span class="badge bg-success-subtle text-success ms-2">ผ่านเกณฑ์</span>'}
+                                </div>
+                                <span class="fw-bold ${isWeak ? 'text-danger' : 'text-success'}">
+                                    ${item.score}/${item.total} ข้อ (${pct}%)
+                                </span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            const percentage = Math.round((totalScore / questionsData.length) * 100);
             let resultBadge = percentage >= 80 ? 'bg-success' : (percentage >= 50 ? 'bg-primary' : 'bg-danger');
             let resultText = percentage >= 80 ? 'ยอดเยี่ยมมาก! คุณมีความพร้อมสูงมาก' : (percentage >= 50 ? 'ผ่านเกณฑ์! ลองทบทวนจุดที่ผิดอีกนิดนะ' : 'ควรทบทวนเนื้อหาเพิ่มเติมเพื่อความแม่นยำ');
 
             const scoreCard = `
-                <div class="card border-0 bg-light text-center p-4 mb-4 rounded-4 shadow-sm">
+                <div class="card border-0 bg-body-tertiary text-center p-4 mb-4 rounded-4 shadow-sm">
                     <h4 class="fw-bold mb-2">สรุปผลการทดสอบ</h4>
-                    <div class="display-4 fw-bold my-2 text-primary">${score} <span class="fs-4 text-muted">/ ${questionsData.length}</span></div>
+                    <div class="display-4 fw-bold my-2 text-primary">${totalScore} <span class="fs-4 text-muted">/ ${questionsData.length}</span></div>
                     <p class="mb-2"><span class="badge ${resultBadge} fs-6 px-3 py-2 rounded-pill">${resultText} (${percentage}%)</span></p>
-                    <div class="mt-3">
-                        <button onclick="location.reload()" class="btn btn-outline-primary rounded-pill px-4 me-2">
+                    ${statusAlertHTML}
+                    ${topicBreakdownHTML}
+                    <div class="mt-4 d-flex justify-content-center gap-2 flex-wrap">
+                        <a href="analytics.html" class="btn btn-primary rounded-pill px-4 fw-bold">
+                            <i class="fas fa-chart-pie me-1"></i>ดูผลวิเคราะห์จุดอ่อนรายหัวข้อ
+                        </a>
+                        <button onclick="location.reload()" class="btn btn-outline-primary rounded-pill px-4">
                             <i class="fas fa-rotate-right me-1"></i>ทำข้อสอบอีกครั้ง
                         </button>
                     </div>
@@ -513,20 +698,18 @@
             const container = document.getElementById('mainContentCard');
             container.insertAdjacentHTML('afterbegin', scoreCard);
 
-            // ซ่อนปุ่มส่งคำตอบ
-            document.getElementById('submitBtn').style.display = 'none';
-
+            submitBtn.style.display = 'none';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 7. กรณีเกิดข้อผิดพลาด
+        // 8. กรณีเกิดข้อผิดพลาด
         function renderError(msg) {
             document.getElementById('headerContainer').innerHTML = `<h3 class="fw-bold text-warning">เกิดข้อผิดพลาด</h3>`;
             document.getElementById('mainContentCard').innerHTML = `
                 <div class="text-center py-5">
                     <i class="fas fa-exclamation-circle text-danger display-4 mb-3"></i>
-                    <h5 class="text-muted mb-4">${msg}</h5>
-                    <a href="index.html" class="btn btn-primary rounded-pill px-4">
+                    <h5 class="text-muted mb-4">${escapeHtml(msg)}</h5>
+                    <a href="summary.html?mode=quiz" class="btn btn-primary rounded-pill px-4">
                         <i class="fas fa-arrow-left me-2"></i>กลับหน้าคลังข้อสอบ
                     </a>
                 </div>

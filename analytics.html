@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-bs-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -11,6 +11,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- โหลดค่าธีม Dark/Light Mode ทันที -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('m4prep_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
 
     <style>
         body {
@@ -39,6 +47,7 @@
             justify-content: center;
             border: 1px solid var(--bs-border-color);
             background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
             cursor: pointer;
         }
 
@@ -60,7 +69,7 @@
             </a>
             <div class="d-flex align-items-center gap-2">
                 <a href="summary.html" class="btn btn-outline-primary btn-sm rounded-pill px-3">คลังข้อสอบ & สรุป</a>
-                <button class="theme-toggle-btn" onclick="toggleDarkMode()" title="เปลี่ยนโหมดมืด/สว่าง">
+                <button class="theme-toggle-btn" onclick="handleThemeToggle()" title="เปลี่ยนโหมดมืด/สว่าง">
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
             </div>
@@ -76,22 +85,95 @@
         </div>
     </main>
 
+    <!-- Modal ยืนยันการรีเซ็ตความแม่นยำ -->
+    <div class="modal fade" id="resetConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-body text-center p-4">
+                    <div class="text-danger mb-3">
+                        <i class="fas fa-rotate-left fa-3x"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">ยืนยันการรีเซ็ตความแม่นยำ</h5>
+                    <p class="text-secondary small mb-4" id="resetModalDesc">
+                        คุณต้องการรีเซ็ตประวัติคะแนนและความแม่นยำใช่หรือไม่?
+                    </p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-secondary"
+                            data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold" id="confirmResetBtn"
+                            onclick="executeReset()">
+                            <i class="fas fa-trash-alt me-1"></i>ยืนยันรีเซ็ต
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        function syncThemeIcon() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = currentTheme === 'dark' ? 'fas fa-sun text-warning' : 'fas fa-moon';
+            }
+        }
+
+        function handleThemeToggle() {
+            if (typeof toggleDarkMode === 'function') {
+                toggleDarkMode();
+            } else {
+                const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-bs-theme', newTheme);
+                localStorage.setItem('m4prep_theme', newTheme);
+            }
+            syncThemeIcon();
+        }
+        syncThemeIcon();
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&')
+                .replace(/</g, '<')
+                .replace(/>/g, '>')
+                .replace(/"/g, '"');
+        }
+
+        // Supabase Config
         const SUPABASE_URL = 'https://jykdmzhqrcdyulztcota.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5a2RtemhxcmNkeXVsenRjb3RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTg0MjcsImV4cCI6MjEwNTM5NDQyN30.Cz7joFgrCPLFyAhKlUL9azLcExXsskUEoAUBd0yc99E';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        let currentUserId = null;
+        let pendingResetTarget = null;
+        const resetModal = new bootstrap.Modal(document.getElementById('resetConfirmModal'));
 
         const subjectNames = {
             'math': { name: 'คณิตศาสตร์', icon: 'fa-calculator', color: 'primary' },
             'science': { name: 'วิทยาศาสตร์', icon: 'fa-flask', color: 'success' },
             'english': { name: 'ภาษาอังกฤษ', icon: 'fa-language', color: 'danger' },
             'thai': { name: 'ภาษาไทย', icon: 'fa-book-open', color: 'warning' },
-            'society': { name: 'สังคมศึกษา', icon: 'fa-globe-asia', color: 'info' }
+            'society': { name: 'สังคมศึกษา', icon: 'fa-globe-asia', color: 'info' },
+            'other': { name: 'วิชาทั่วไป', icon: 'fa-book', color: 'secondary' }
         };
 
         document.addEventListener('DOMContentLoaded', loadAnalytics);
+
+        function formatRemainingTime(msRemaining) {
+            if (msRemaining <= 0) return 'ครบกำหนด 7 วัน';
+            const totalHours = Math.floor(msRemaining / (1000 * 60 * 60));
+            const days = Math.floor(totalHours / 24);
+            const hours = totalHours % 24;
+            if (days > 0) {
+                return `รีเซ็ตใน ${days} วัน ${hours} ชม.`;
+            }
+            const mins = Math.max(1, Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60)));
+            return hours > 0 ? `รีเซ็ตใน ${hours} ชม. ${mins} น.` : `รีเซ็ตใน ${mins} นาที`;
+        }
 
         async function loadAnalytics() {
             const container = document.getElementById('mainContainer');
@@ -111,27 +193,27 @@
             }
 
             const user = session.user;
+            currentUserId = user.id;
             const username = user.email.split('@')[0];
 
-            // 2. ดึงคะแนนสอบเฉพาะของ User ID นี้
+            // 2. ดึงคะแนนสอบเรียงจากเก่าไปใหม่
             const { data: results, error } = await _supabase
                 .from('exam_results')
                 .select('*')
                 .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: true });
 
             if (error) {
                 console.error(error);
-                container.innerHTML = `<div class="alert alert-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}</div>`;
+                container.innerHTML = `<div class="alert alert-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${escapeHtml(error.message)}</div>`;
                 return;
             }
 
-            // กรณีที่ยังไม่เคยทำข้อสอบเลย
             if (!results || results.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-5 stat-card p-5">
                         <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
-                        <h4 class="fw-bold">สวัสดีคุณ ${username}! ยังไม่มีประวัติการทำข้อสอบ</h4>
+                        <h4 class="fw-bold">สวัสดีคุณ ${escapeHtml(username)}! ยังไม่มีประวัติการทำข้อสอบ</h4>
                         <p class="text-secondary mb-4">ลองไปทำข้อสอบสัก 1 ชุด เพื่อให้ระบบช่วยวิเคราะห์จุดอ่อนของคุณกันเลย</p>
                         <a href="summary.html?mode=quiz" class="btn btn-primary rounded-pill px-4">ไปทำข้อสอบกันเลย</a>
                     </div>
@@ -139,67 +221,129 @@
                 return;
             }
 
-            // 3. คำนวณสถิติรวม, แยกตามวิชา และแยกตามบทเรียน (Topic)
-            let totalScore = 0;
-            let totalQuestions = 0;
-            const subjectStats = {};
-            const topicStats = {};
+            // 3. จัดกลุ่มตามรายหัวข้อ (subject::topic) เพื่อวิเคราะห์จุดอ่อนรายบท และคำนวณรอบ 7 วัน
+            const now = Date.now();
+            const groupedByTopic = {};
 
             results.forEach(row => {
-                totalScore += row.score;
-                totalQuestions += row.total_questions;
-
-                // จัดกลุ่มตามวิชา
-                if (!subjectStats[row.subject]) {
-                    subjectStats[row.subject] = { score: 0, total: 0 };
+                const sub = row.subject || 'other';
+                const top = row.topic || 'ข้อสอบรวม';
+                const key = `${sub}::${top}`;
+                if (!groupedByTopic[key]) {
+                    groupedByTopic[key] = { subject: sub, topic: top, rows: [] };
                 }
-                subjectStats[row.subject].score += row.score;
-                subjectStats[row.subject].total += row.total_questions;
-
-                // จัดกลุ่มตามเรื่องย่อย (Topic)
-                const topicKey = `${row.subject}::${row.topic}`;
-                if (!topicStats[topicKey]) {
-                    topicStats[topicKey] = { subject: row.subject, topic: row.topic, score: 0, total: 0 };
-                }
-                topicStats[topicKey].score += row.score;
-                topicStats[topicKey].total += row.total_questions;
+                groupedByTopic[key].rows.push(row);
             });
 
-            const overallPercent = Math.round((totalScore / totalQuestions) * 100);
+            let totalScore = 0;
+            let totalQuestions = 0;
+            const uniqueExamSubmissions = new Set(); // นับจำนวนครั้งที่กดส่งชุดข้อสอบจริง (ไม่นับเบิ้ลตามจำนวนหัวข้อในชุด)
+            const subjectStats = {};
+            const topicList = [];
 
-            // แปลง Topic เป็น Array และเรียงจากคะแนนน้อยไปมาก (หาจุดอ่อน)
-            const topicList = Object.values(topicStats).map(t => ({
-                ...t,
-                percent: Math.round((t.score / t.total) * 100)
-            })).sort((a, b) => a.percent - b.percent);
+            Object.values(groupedByTopic).forEach(group => {
+                let cycleStart = null;
+                let activeRows = [];
 
-            // กรองเรื่องที่ได้คะแนนต่ำกว่า 60% เป็น "จุดอ่อน"
-            const weaknesses = topicList.filter(t => t.percent < 60);
+                group.rows.forEach(r => {
+                    const t = new Date(r.created_at).getTime();
+                    if (!cycleStart || (t - cycleStart) >= SEVEN_DAYS_MS) {
+                        cycleStart = t;
+                        activeRows = [r];
+                    } else {
+                        activeRows.push(r);
+                    }
+                });
 
-            renderDashboard(username, results.length, overallPercent, subjectStats, topicList, weaknesses);
+                const isExpired = !cycleStart || (now - cycleStart) >= SEVEN_DAYS_MS;
+                const msRemaining = isExpired ? 0 : (SEVEN_DAYS_MS - (now - cycleStart));
+
+                let topicScore = 0;
+                let topicTotal = 0;
+                const examSetsSet = new Set();
+
+                if (!isExpired) {
+                    activeRows.forEach(r => {
+                        topicScore += r.score;
+                        topicTotal += r.total_questions;
+
+                        const setName = (r.exam_set || r.topic || '').trim();
+                        if (setName && setName !== group.topic) {
+                            examSetsSet.add(setName);
+                        }
+
+                        // จัดกลุ่มการส่งข้อสอบในรอบเดียวกัน (ห่างกันไม่เกิน 10 วินาทีในชุดเดียวกัน = ส่ง 1 ครั้ง)
+                        const timeBucket = Math.floor(new Date(r.created_at).getTime() / 10000);
+                        uniqueExamSubmissions.add(`${group.subject}::${setName}::${timeBucket}`);
+                    });
+
+                    totalScore += topicScore;
+                    totalQuestions += topicTotal;
+
+                    if (!subjectStats[group.subject]) {
+                        subjectStats[group.subject] = { score: 0, total: 0 };
+                    }
+                    subjectStats[group.subject].score += topicScore;
+                    subjectStats[group.subject].total += topicTotal;
+                } else {
+                    if (!subjectStats[group.subject]) {
+                        subjectStats[group.subject] = { score: 0, total: 0 };
+                    }
+                }
+
+                const percent = (!isExpired && topicTotal > 0)
+                    ? Math.round((topicScore / topicTotal) * 100)
+                    : 0;
+
+                topicList.push({
+                    subject: group.subject,
+                    topic: group.topic,
+                    examSets: Array.from(examSetsSet),
+                    score: topicScore,
+                    total: topicTotal,
+                    percent: percent,
+                    isExpired: isExpired,
+                    remainingText: formatRemainingTime(msRemaining),
+                    attemptsCount: isExpired ? 0 : activeRows.length
+                });
+            });
+
+            topicList.sort((a, b) => {
+                if (a.isExpired !== b.isExpired) return a.isExpired ? 1 : -1;
+                return a.percent - b.percent;
+            });
+
+            const overallPercent = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
+            const weaknesses = topicList.filter(t => !t.isExpired && t.percent < 60);
+
+            renderDashboard(username, uniqueExamSubmissions.size, overallPercent, subjectStats, topicList, weaknesses);
         }
 
         function renderDashboard(username, totalExams, overallPercent, subjectStats, topicList, weaknesses) {
             const container = document.getElementById('mainContainer');
 
-            // สร้าง HTML ส่วนแจ้งเตือนจุดอ่อน
+            // ส่วนแจ้งเตือนจุดอ่อนรายหัวข้อ (พร้อมระบุว่าพบในชุดข้อสอบไหน)
             let weaknessHTML = '';
             if (weaknesses.length > 0) {
                 weaknessHTML = `
                     <div class="alert alert-danger border-0 rounded-4 p-4 mb-4 shadow-sm">
-                        <h5 class="fw-bold mb-3"><i class="fas fa-exclamation-triangle me-2"></i>เรื่องที่คุณควรทบทวนเพิ่มเติม (คะแนนต่ำกว่า 60%)</h5>
+                        <h5 class="fw-bold mb-3"><i class="fas fa-exclamation-triangle me-2"></i>หัวข้อเรื่องที่คุณควรทบทวนเพิ่มเติม (คะแนนต่ำกว่า 60%)</h5>
                         <div class="row g-3">
                             ${weaknesses.map(w => {
                                 const sub = subjectNames[w.subject] || { name: w.subject };
+                                const fromSetText = w.examSets.length > 0
+                                    ? `<div class="small text-secondary mt-1"><i class="fas fa-layer-group me-1"></i>พบในชุด: ${escapeHtml(w.examSets.join(', '))}</div>`
+                                    : '';
                                 return `
                                     <div class="col-md-6">
-                                        <div class="d-flex justify-content-between align-items-center bg-body p-3 rounded-3 border">
-                                            <div>
-                                                <span class="badge bg-danger mb-1">${sub.name}</span>
-                                                <h6 class="fw-bold mb-0">เรื่อง: ${w.topic}</h6>
+                                        <div class="d-flex justify-content-between align-items-center bg-body p-3 rounded-3 border h-100">
+                                            <div class="pe-2">
+                                                <span class="badge bg-danger mb-1">${escapeHtml(sub.name)}</span>
+                                                <h6 class="fw-bold mb-0">เรื่อง: ${escapeHtml(w.topic)}</h6>
                                                 <small class="text-danger fw-bold">ความแม่นยำ ${w.percent}% (${w.score}/${w.total} ข้อ)</small>
+                                                ${fromSetText}
                                             </div>
-                                            <a href="summary.html?subject=${w.subject}" class="btn btn-sm btn-outline-danger rounded-pill">
+                                            <a href="summary.html?subject=${encodeURIComponent(w.subject)}" class="btn btn-sm btn-outline-danger rounded-pill text-nowrap">
                                                 อ่านสรุปเพิ่ม <i class="fas fa-arrow-right ms-1"></i>
                                             </a>
                                         </div>
@@ -213,23 +357,38 @@
                 weaknessHTML = `
                     <div class="alert alert-success border-0 rounded-4 p-4 mb-4 shadow-sm">
                         <h5 class="fw-bold mb-1"><i class="fas fa-trophy me-2"></i>ยอดเยี่ยมมาก!</h5>
-                        <p class="mb-0">ตอนนี้คุณยังไม่มีบทเรียนไหนที่ได้คะแนนต่ำกว่า 60% รักษามาตรฐานนี้ต่อไปนะ!</p>
+                        <p class="mb-0">ในรอบ 7 วันนี้ คุณยังไม่มีหัวข้อเรื่องไหนที่ได้คะแนนต่ำกว่า 60% รักษามาตรฐานนี้ต่อไปนะ!</p>
                     </div>
                 `;
             }
 
-            // สร้าง HTML ความถนัดแยกรายวิชา
+            // ความถนัดแยกรายวิชา
             const subjectCardsHTML = Object.keys(subjectStats).map(subKey => {
                 const stat = subjectStats[subKey];
-                const percent = Math.round((stat.score / stat.total) * 100);
+                const isReset = stat.total === 0;
+                const percent = isReset ? 0 : Math.round((stat.score / stat.total) * 100);
                 const info = subjectNames[subKey] || { name: subKey, icon: 'fa-book', color: 'secondary' };
-                const barColor = percent < 60 ? 'bg-danger' : (percent < 80 ? 'bg-warning' : 'bg-success');
+                const barColor = isReset ? 'bg-secondary' : (percent < 60 ? 'bg-danger' : (percent < 80 ? 'bg-warning' : 'bg-success'));
 
                 return `
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="fw-bold"><i class="fas ${info.icon} text-${info.color} me-2"></i>${info.name}</span>
-                            <span class="fw-bold">${percent}% <small class="text-secondary fw-normal">(${stat.score}/${stat.total})</small></span>
+                    <div class="mb-3 pb-2 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold">
+                                <i class="fas ${info.icon} text-${info.color} me-2"></i>${escapeHtml(info.name)}
+                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold">
+                                    ${isReset ? '<span class="text-secondary small">รีเซ็ตแล้ว (0%)</span>' : `${percent}% <small class="text-secondary fw-normal">(${stat.score}/${stat.total})</small>`}
+                                </span>
+                                <button class="btn btn-sm btn-link text-danger p-0 text-decoration-none"
+                                    data-mode="subject"
+                                    data-subject="${escapeHtml(subKey)}"
+                                    data-label="วิชา${escapeHtml(info.name)}"
+                                    onclick="openResetModalFromBtn(this)"
+                                    title="รีเซ็ตความแม่นยำวิชา${escapeHtml(info.name)}">
+                                    <i class="fas fa-rotate-left"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="progress">
                             <div class="progress-bar ${barColor}" style="width: ${percent}%"></div>
@@ -238,57 +397,95 @@
                 `;
             }).join('');
 
-            // สร้าง HTML ตารางรายละเอียดทุกบทเรียน
+            // ตารางรายละเอียดแยกตามหัวข้อเรื่อง (Topic)
             const topicRowsHTML = topicList.map(t => {
                 const info = subjectNames[t.subject] || { name: t.subject };
-                const isWeak = t.percent < 60;
-                const badge = isWeak 
-                    ? `<span class="badge bg-danger-subtle text-danger rounded-pill">ควรทบทวนเพิ่ม</span>`
-                    : `<span class="badge bg-success-subtle text-success rounded-pill">ทำได้ดีแล้ว</span>`;
+                const isWeak = !t.isExpired && t.percent < 60;
+
+                let statusBadge = '';
+                if (t.isExpired) {
+                    statusBadge = `<span class="badge bg-secondary-subtle text-secondary rounded-pill"><i class="fas fa-clock-rotate-left me-1"></i>รีเซ็ตครบ 7 วัน</span>`;
+                } else if (isWeak) {
+                    statusBadge = `<span class="badge bg-danger-subtle text-danger rounded-pill">ควรทบทวนเพิ่ม</span>`;
+                } else {
+                    statusBadge = `<span class="badge bg-success-subtle text-success rounded-pill">ทำได้ดีแล้ว</span>`;
+                }
+
+                const examSetSubLabel = t.examSets.length > 0
+                    ? `<div class="small text-secondary"><i class="fas fa-folder-open me-1"></i>ชุด: ${escapeHtml(t.examSets.join(', '))}</div>`
+                    : '';
+
+                const retrySetParam = t.examSets.length > 0 ? `&exam_set=${encodeURIComponent(t.examSets[0])}` : '';
+                const timerBadge = t.isExpired
+                    ? `<a href="quiz.html?topic=${encodeURIComponent(t.topic)}&subject=${encodeURIComponent(t.subject)}${retrySetParam}" class="btn btn-xs btn-outline-primary rounded-pill py-0 px-2 small">ทำรอบใหม่</a>`
+                    : `<span class="badge bg-info-subtle text-info-emphasis rounded-pill fw-normal"><i class="far fa-clock me-1"></i>${t.remainingText}</span>`;
 
                 return `
                     <tr>
-                        <td><span class="fw-bold">${info.name}</span></td>
-                        <td>${t.topic}</td>
-                        <td>${t.score} / ${t.total}</td>
-                        <td style="width: 25%;">
+                        <td><span class="fw-bold">${escapeHtml(info.name)}</span></td>
+                        <td>
+                            <div class="fw-semibold">${escapeHtml(t.topic)}</div>
+                            ${examSetSubLabel}
+                        </td>
+                        <td>${t.isExpired ? '-' : `${t.score} / ${t.total}`}</td>
+                        <td style="width: 22%;">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="progress flex-grow-1" style="height: 8px;">
-                                    <div class="progress-bar ${isWeak ? 'bg-danger' : 'bg-success'}" style="width: ${t.percent}%"></div>
+                                    <div class="progress-bar ${t.isExpired ? 'bg-secondary' : (isWeak ? 'bg-danger' : 'bg-success')}" style="width: ${t.percent}%"></div>
                                 </div>
                                 <small class="fw-bold">${t.percent}%</small>
                             </div>
                         </td>
-                        <td>${badge}</td>
+                        <td>${statusBadge}</td>
+                        <td>${timerBadge}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0"
+                                data-mode="topic"
+                                data-subject="${escapeHtml(t.subject)}"
+                                data-topic="${escapeHtml(t.topic)}"
+                                data-label="เรื่อง ${escapeHtml(t.topic)} (${escapeHtml(info.name)})"
+                                onclick="openResetModalFromBtn(this)"
+                                title="รีเซ็ตความแม่นยำเรื่องนี้">
+                                <i class="fas fa-rotate-left me-1"></i>รีเซ็ต
+                            </button>
+                        </td>
                     </tr>
                 `;
             }).join('');
 
             container.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
                     <div>
-                        <h2 class="fw-bold mb-1">📊 วิเคราะห์ผลการเรียนของ ${username}</h2>
-                        <p class="text-secondary mb-0">สรุปจุดแข็งและจุดอ่อนจากประวัติการทำข้อสอบทั้งหมดของคุณ</p>
+                        <h2 class="fw-bold mb-1">📊 วิเคราะห์ผลการเรียนของ ${escapeHtml(username)}</h2>
+                        <p class="text-secondary mb-0">
+                            <i class="fas fa-sync-alt text-primary me-1"></i>ระบบวิเคราะห์จุดอ่อนรายหัวข้อเรื่อง และรีเซ็ตอัตโนมัติทุกๆ <strong>7 วัน</strong>
+                        </p>
                     </div>
+                    <button class="btn btn-outline-danger rounded-pill px-4 fw-bold"
+                        data-mode="all"
+                        data-label="ข้อมูลความแม่นยำทั้งหมดทุกวิชา"
+                        onclick="openResetModalFromBtn(this)">
+                        <i class="fas fa-trash-restore me-2"></i>รีเซ็ตความแม่นยำทั้งหมด
+                    </button>
                 </div>
 
                 <!-- Summary Cards -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <div class="stat-card p-4 text-center">
-                            <p class="text-secondary small mb-1">ความแม่นยำเฉลี่ยรวม</p>
+                            <p class="text-secondary small mb-1">ความแม่นยำเฉลี่ย (รอบ 7 วันปัจจุบัน)</p>
                             <h2 class="fw-bold text-primary mb-0">${overallPercent}%</h2>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="stat-card p-4 text-center">
-                            <p class="text-secondary small mb-1">จำนวนครั้งที่ทำข้อสอบ</p>
+                            <p class="text-secondary small mb-1">จำนวนครั้งที่ทำข้อสอบในรอบนี้</p>
                             <h2 class="fw-bold text-success mb-0">${totalExams} ครั้ง</h2>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="stat-card p-4 text-center">
-                            <p class="text-secondary small mb-1">บทเรียนที่ต้องเร่งทบทวน</p>
+                            <p class="text-secondary small mb-1">หัวข้อเรื่องที่ต้องเร่งทบทวน</p>
                             <h2 class="fw-bold text-danger mb-0">${weaknesses.length} เรื่อง</h2>
                         </div>
                     </div>
@@ -299,7 +496,7 @@
 
                 <div class="row g-4">
                     <!-- คะแนนแยกรายวิชา -->
-                    <div class="col-lg-5">
+                    <div class="col-lg-4">
                         <div class="stat-card p-4 h-100">
                             <h5 class="fw-bold mb-4"><i class="fas fa-layer-group text-primary me-2"></i>ความถนัดแยกรายวิชา</h5>
                             ${subjectCardsHTML}
@@ -307,18 +504,20 @@
                     </div>
 
                     <!-- คะแนนแยกตามเรื่องย่อย (Topic) -->
-                    <div class="col-lg-7">
+                    <div class="col-lg-8">
                         <div class="stat-card p-4 h-100">
-                            <h5 class="fw-bold mb-4"><i class="fas fa-list-check text-primary me-2"></i>รายละเอียดแยกตามบทเรียน</h5>
+                            <h5 class="fw-bold mb-4"><i class="fas fa-list-check text-primary me-2"></i>รายละเอียดแยกตามหัวข้อเรื่อง</h5>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
                                     <thead>
                                         <tr class="text-secondary small">
                                             <th>วิชา</th>
-                                            <th>บทเรียน / เรื่อง</th>
+                                            <th>หัวข้อเรื่อง / ชุดข้อสอบ</th>
                                             <th>คะแนน</th>
-                                            <th>เปอร์เซ็นต์</th>
+                                            <th>ความแม่นยำ</th>
                                             <th>สถานะ</th>
+                                            <th>รอบ 7 วัน</th>
+                                            <th class="text-end">จัดการ</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -330,6 +529,61 @@
                     </div>
                 </div>
             `;
+        }
+
+        function openResetModalFromBtn(btn) {
+            const mode = btn.getAttribute('data-mode');
+            const subject = btn.getAttribute('data-subject') || '';
+            const topic = btn.getAttribute('data-topic') || '';
+            const label = btn.getAttribute('data-label') || 'ข้อมูลนี้';
+
+            pendingResetTarget = { mode, subject, topic };
+            document.getElementById('resetModalDesc').innerHTML =
+                `คุณต้องการรีเซ็ตความแม่นยำของ <strong>"${escapeHtml(label)}"</strong> ใช่หรือไม่?<br><span class="text-danger">คะแนนเดิมจะถูกล้างเป็น 0% เพื่อเริ่มเก็บสถิติรอบใหม่ทันที</span>`;
+
+            resetModal.show();
+        }
+
+        async function executeReset() {
+            if (!pendingResetTarget || !currentUserId) return;
+
+            const confirmBtn = document.getElementById('confirmResetBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>กำลังรีเซ็ต...';
+
+            try {
+                let query = _supabase
+                    .from('exam_results')
+                    .delete()
+                    .eq('user_id', currentUserId);
+
+                if (pendingResetTarget.mode === 'subject') {
+                    query = query.eq('subject', pendingResetTarget.subject);
+                } else if (pendingResetTarget.mode === 'topic') {
+                    query = query
+                        .eq('subject', pendingResetTarget.subject)
+                        .eq('topic', pendingResetTarget.topic);
+                }
+
+                const { data, error } = await query.select();
+
+                if (error) {
+                    throw error;
+                }
+
+                if (!data || data.length === 0) {
+                    alert('ไม่สามารถลบข้อมูลได้ กรุณาตรวจสอบว่าได้เพิ่มคำสั่ง SQL Policy สำหรับ DELETE ในตาราง exam_results ของ Supabase แล้ว');
+                }
+
+                resetModal.hide();
+                await loadAnalytics();
+            } catch (err) {
+                console.error('Reset error:', err);
+                alert('เกิดข้อผิดพลาดในการรีเซ็ต: ' + err.message);
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>ยืนยันรีเซ็ต';
+            }
         }
     </script>
 </body>

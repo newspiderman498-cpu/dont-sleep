@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-bs-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -14,15 +14,23 @@
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- โหลดค่าธีม Dark/Light Mode ทันที -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('m4prep_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
+
     <style>
         body {
             font-family: 'Prompt', sans-serif;
-            background-color: #f8f9fa;
-            color: #333;
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
         }
 
         .study-header {
-            background: linear-gradient(135deg, #2563eb 0%, #0d6efd 100%); /* Default */
+            background: linear-gradient(135deg, #2563eb 0%, #0d6efd 100%);
             color: white;
             padding: 40px 0 30px 0;
             border-bottom-left-radius: 24px;
@@ -31,12 +39,12 @@
         }
 
         .content-card {
-            background-color: #ffffff;
+            background-color: var(--bs-card-bg);
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
             padding: 35px;
             margin-top: -30px;
-            border: none;
+            border: 1px solid var(--bs-border-color-translucent);
         }
 
         .badge-subject {
@@ -48,7 +56,7 @@
         .content-body {
             font-size: 1.1rem;
             line-height: 1.8;
-            color: #2c3e50;
+            color: var(--bs-body-color);
             white-space: pre-line;
         }
 
@@ -61,7 +69,7 @@
         }
 
         .action-box {
-            background-color: #f1f5f9;
+            background-color: var(--bs-tertiary-bg);
             border-radius: 16px;
             padding: 20px;
         }
@@ -71,18 +79,18 @@
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm sticky-top">
         <div class="container">
-            <a class="navbar-brand fw-bold text-primary" href="summary.html">
+            <a class="navbar-brand fw-bold text-primary" href="index.html">
                 <i class="fas fa-book-reader me-2"></i>M.4 PREP
             </a>
-            <button onclick="window.close()" class="btn btn-outline-secondary btn-sm rounded-pill">
-                <i class="fas fa-times me-1"></i>ปิดหน้านี้
-            </button>
+            <a href="summary.html?mode=summary" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="fas fa-arrow-left me-1"></i>กลับคลังสื่อการเรียน
+            </a>
         </div>
     </nav>
 
-    <!-- Header Section (เพิ่ม id="studyHeader") -->
+    <!-- Header Section -->
     <header class="study-header text-center" id="studyHeader">
         <div class="container" id="headerContainer">
             <div class="spinner-border text-light mb-2" role="status"></div>
@@ -112,7 +120,6 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5a2RtemhxcmNkeXVsenRjb3RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTg0MjcsImV4cCI6MjEwNTM5NDQyN30.Cz7joFgrCPLFyAhKlUL9azLcExXsskUEoAUBd0yc99E';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // กำหนดธีมสีและ Gradient ของแต่ละวิชา
         const subjectConfig = {
             'math': { 
                 name: 'คณิตศาสตร์', 
@@ -248,13 +255,11 @@
             const subKey = getSubjectKey(course);
             const config = subjectConfig[subKey] || subjectConfig['other'];
 
-            // เปลี่ยนสีพื้นหลัง Header แถบบนตามวิชาจริง
             const headerElem = document.getElementById('studyHeader');
             if (headerElem) {
                 headerElem.style.background = config.bgGradient;
             }
 
-            // Render ข้อความใน Header
             document.getElementById('headerContainer').innerHTML = `
                 <span class="badge badge-subject ${config.badgeClass} mb-2">
                     <i class="fas ${config.icon} me-1"></i>${config.name}
@@ -270,15 +275,15 @@
             if (course.pdf_url || course.file_url) {
                 const fileLink = course.pdf_url || course.file_url;
                 mediaHTML += `
-                    <div class="action-box mb-4 d-flex align-items-center justify-content-between">
+                    <div class="action-box mb-4 d-flex flex-wrap gap-3 align-items-center justify-content-between">
                         <div class="d-flex align-items-center">
                             <i class="fas fa-file-pdf text-danger display-6 me-3"></i>
                             <div>
                                 <h6 class="fw-bold mb-0">เอกสารประกอบการเรียน / Short Note PDF</h6>
-                                <small class="text-muted">ดาวน์โหลดเพื่ออ่านทบทวนหรือพิมพ์ออกมาจด</small>
+                                <small class="text-secondary">ดาวน์โหลดเพื่ออ่านทบทวนหรือพิมพ์ออกมาจด</small>
                             </div>
                         </div>
-                        <a href="${fileLink}" target="_blank" class="btn btn-outline-danger rounded-pill fw-bold">
+                        <a href="${fileLink}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-danger rounded-pill fw-bold">
                             <i class="fas fa-download me-1"></i>ดาวน์โหลดเอกสาร
                         </a>
                     </div>
@@ -303,7 +308,7 @@
                 </div>
                 <hr class="my-4">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="summary.html" class="btn btn-outline-primary rounded-pill">
+                    <a href="summary.html?mode=summary" class="btn btn-outline-primary rounded-pill">
                         <i class="fas fa-arrow-left me-1"></i>กลับไปคลังบทเรียน
                     </a>
                     <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="btn btn-light rounded-pill border">
@@ -315,22 +320,20 @@
 
         function formatVideoUrl(url) {
             if (!url) return '';
-            if (url.includes('youtube.com/watch?v=')) {
-                return url.replace('watch?v=', 'embed/');
-            }
-            if (url.includes('youtu.be/')) {
-                return url.replace('youtu.be/', 'youtube.com/embed/');
+            const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            if (ytMatch && ytMatch[1]) {
+                return `https://www.youtube.com/embed/${ytMatch[1]}`;
             }
             return url;
         }
 
         function renderError(msg) {
-            document.getElementById('headerContainer').innerHTML = `<h3 class="fw-bold text-warning">เกิดข้อผิดพลาด</h3>`
+            document.getElementById('headerContainer').innerHTML = `<h3 class="fw-bold text-warning">เกิดข้อผิดพลาด</h3>`;
             document.getElementById('mainContentCard').innerHTML = `
                 <div class="text-center py-5">
                     <i class="fas fa-exclamation-circle text-danger display-4 mb-3"></i>
                     <h5 class="text-muted mb-4">${msg}</h5>
-                    <a href="summary.html" class="btn btn-primary rounded-pill px-4">
+                    <a href="summary.html?mode=summary" class="btn btn-primary rounded-pill px-4">
                         <i class="fas fa-arrow-left me-2"></i>กลับหน้าบทเรียน
                     </a>
                 </div>

@@ -82,7 +82,6 @@ const subjectConfig = SUBJECT_CONFIG;
 function getSubjectKey(course) {
     if (!course) return 'other';
 
-    // กรณีส่งชื่อวิชามาเป็นข้อความโดยตรง
     if (typeof course === 'string') {
         const str = course.toLowerCase().trim();
         for (const [key, cfg] of Object.entries(SUBJECT_CONFIG)) {
@@ -91,7 +90,6 @@ function getSubjectKey(course) {
         return 'other';
     }
 
-    // กรณีส่งมาเป็น Object ข้อมูลบทเรียนจาก Supabase
     const fullText = [
         course.subject,
         course.category,
@@ -121,8 +119,54 @@ function formatVideoUrl(url) {
     return url;
 }
 
-// 5. ฟังก์ชันบันทึกคะแนนสอบลง Supabase (เชื่อมกับ User ID ของแต่ละคนอัตโนมัติ)
-async function saveExamResult(subject, topic, score, totalQuestions) {
+// 5. ฟังก์ชันดึงรายชื่อหัวข้อเรื่อง (Topics) ตามวิชา
+async function getTopicsBySubject(subjectName) {
+    if (!_supabase || !subjectName) return [];
+    const { data, error } = await _supabase
+        .from('topics')
+        .select('*')
+        .eq('subject', subjectName)
+        .order('id', { ascending: true });
+
+    if (error) {
+        console.error('โหลดหัวข้อเรื่องไม่สำเร็จ:', error.message);
+        return [];
+    }
+    return data || [];
+}
+
+// 6. ฟังก์ชันดึงรายชื่อชุดข้อสอบ (Exam Sets) ทั้งหมดในวิชานั้นๆ พร้อมจำนวนข้อ
+async function getExamSetsBySubject(subjectName) {
+    if (!_supabase || !subjectName) return [];
+    const { data, error } = await _supabase
+        .from('quizzes')
+        .select('exam_set, topic')
+        .eq('subject', subjectName);
+
+    if (error || !data) {
+        console.error('โหลดชุดข้อสอบไม่สำเร็จ:', error?.message);
+        return [];
+    }
+
+    const setMap = {};
+    data.forEach(q => {
+        const setName = (q.exam_set || q.topic || 'ข้อสอบทั่วไป').trim();
+        if (!setMap[setName]) {
+            setMap[setName] = { name: setName, count: 0, topics: new Set() };
+        }
+        setMap[setName].count += 1;
+        if (q.topic) setMap[setName].topics.add(q.topic);
+    });
+
+    return Object.values(setMap).map(item => ({
+        name: item.name,
+        count: item.count,
+        topics: Array.from(item.topics)
+    }));
+}
+
+// 7. ฟังก์ชันบันทึกคะแนนสอบลง Supabase (รองรับทั้ง exam_set และ topic)
+async function saveExamResult(subject, topic, score, totalQuestions, examSet = null) {
     if (!_supabase) {
         console.error('ไม่พบการเชื่อมต่อ Supabase');
         return { success: false, error: 'Supabase not initialized' };
@@ -137,13 +181,16 @@ async function saveExamResult(subject, topic, score, totalQuestions) {
 
     // แปลงชื่อวิชาให้เป็นคีย์มาตรฐาน (math, science, english, thai, society, other)
     const normalizedSubject = getSubjectKey(subject);
+    const finalTopic = topic || 'ข้อสอบรวม';
+    const finalExamSet = examSet || finalTopic;
 
     const { data, error } = await _supabase
         .from('exam_results')
         .insert([{
             user_id: session.user.id,
             subject: normalizedSubject,
-            topic: topic || 'ข้อสอบรวม',
+            exam_set: finalExamSet,
+            topic: finalTopic,
             score: Number(score) || 0,
             total_questions: Number(totalQuestions) || 0
         }]);

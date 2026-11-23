@@ -1,18 +1,26 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-bs-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M.4 Tutor MOOC - ติวเข้มเข้า ม.4</title>
-    <script src="theme.js"></script>
+    <title>คลังสรุปเนื้อหา & แบบทดสอบ - M.4 PREP</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Google Fonts & Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- โหลดค่าธีม Dark/Light Mode ทันที -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('m4prep_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
 
     <style>
         body {
@@ -21,89 +29,51 @@
             color: var(--bs-body-color);
         }
 
-        .hero-section {
+        .header-bg {
             background: linear-gradient(135deg, #2563eb 0%, #0d6efd 100%);
             color: white;
-            padding: 80px 0;
-            text-align: center;
+            padding: 40px 0 30px 0;
         }
 
-        .subject-card {
-            transition: transform 0.3s, background-color 0.3s;
-            cursor: pointer;
-            border: none;
-            background-color: var(--bs-card-bg);
-            color: var(--bs-body-color);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .subject-card:hover {
-            transform: translateY(-5px);
-            background-color: var(--bs-tertiary-bg);
-        }
-
-        .subject-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-
-        .content-card img {
-            height: 160px;
-            object-fit: cover;
-        }
-
-        .content-card {
-            transition: 0.3s;
-            border: none;
-            background-color: var(--bs-card-bg);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        }
-
-        .content-card:hover {
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-
-        .type-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+        .mode-tab {
+            border-radius: 30px;
+            padding: 10px 24px;
             font-weight: 600;
-            background: rgba(255, 255, 255, 0.9);
-            color: #0d6efd;
-            backdrop-filter: blur(4px);
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: 2px solid transparent;
+            user-select: none;
         }
 
-        .card-link {
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            height: 100%;
+        .mode-tab.active {
+            background-color: white;
+            color: #2563eb;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .user-dropdown-btn {
-            border: 1.5px solid #0d6efd;
-            color: #0d6efd;
-            background-color: var(--bs-body-bg);
-            border-radius: 50rem;
-            padding: 5px 16px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            transition: all 0.2s ease;
+        .filter-btn.active {
+            background-color: #2563eb !important;
+            color: white !important;
+            border-color: #2563eb !important;
         }
 
-        .user-dropdown-btn:hover,
-        .user-dropdown-btn:focus,
-        .user-dropdown-btn[aria-expanded="true"] {
-            background-color: var(--bs-tertiary-bg);
-            color: #0d6efd;
-            border-color: #0d6efd;
+        .item-card {
+            transition: all 0.3s ease;
+            border: 1px solid var(--bs-border-color-translucent);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            background-color: var(--bs-card-bg);
+        }
+
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .badge-subject {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            border-radius: 20px;
         }
 
         .theme-toggle-btn {
@@ -115,6 +85,7 @@
             justify-content: center;
             border: 1px solid var(--bs-border-color);
             background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
             cursor: pointer;
         }
     </style>
@@ -125,124 +96,72 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm sticky-top">
         <div class="container">
-            <a class="navbar-brand fw-bold text-primary" href="index.html"><i class="fas fa-book-reader"></i> M.4 PREP</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <form class="d-flex mx-auto w-50">
-                    <input class="form-control me-2 rounded-pill" type="search" placeholder="ค้นหาข้อสอบ หรือ บทความ..."
-                        aria-label="Search">
-                    <button class="btn btn-outline-primary rounded-pill" type="submit"><i
-                            class="fas fa-search"></i></button>
-                </form>
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item"><a class="nav-link" href="summary.html">สรุปเนื้อหา&คลังข้อสอบ</a></li>
-                    <li class="nav-item"><a class="nav-link" href="analytics.html">วิเคราะห์คะแนน</a></li>
-
-                    <li class="nav-item ms-2">
-                        <button class="theme-toggle-btn" onclick="toggleDarkMode()" title="เปลี่ยนโหมดมืด/สว่าง">
-                            <i class="fas fa-moon" id="themeIcon"></i>
-                        </button>
-                    </li>
-
-                    <!-- ส่วนแสดงข้อมูล User และปุ่ม ออกจากระบบ/ไปหน้า Admin -->
-                    <li class="nav-item ms-2" id="navAuthContainer">
-                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                    </li>
-                </ul>
+            <a class="navbar-brand fw-bold text-primary" href="index.html">
+                <i class="fas fa-book-reader me-2"></i>M.4 PREP
+            </a>
+            <div class="d-flex align-items-center gap-2">
+                <span id="guestBadge" class="badge bg-warning text-dark rounded-pill d-none">โหมดทดลองเรียน</span>
+                <a href="analytics.html" class="btn btn-outline-primary btn-sm rounded-pill d-none d-sm-inline-flex align-items-center">
+                    <i class="fas fa-chart-pie me-1"></i>วิเคราะห์จุดอ่อน
+                </a>
+                <button class="theme-toggle-btn" onclick="toggleDarkMode()" title="เปลี่ยนโหมดมืด/สว่าง">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+                <a href="index.html" class="btn btn-outline-secondary btn-sm rounded-pill">
+                    <i class="fas fa-arrow-left me-1"></i>กลับหน้าหลัก
+                </a>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <header class="hero-section">
+    <!-- Header & Mode Selector -->
+    <header class="header-bg text-center">
         <div class="container">
-            <h1 class="display-4 fw-bold">ฝึกทำโจทย์ & อ่านสรุปเข้ม</h1>
-            <p class="lead mb-4">คลังข้อสอบเสมือนจริงและ Short Note สรุปเนื้อหา พร้อมสอบเข้า ม.4</p>
-            <div class="d-flex justify-content-center gap-3">
-                <a href="summary.html?mode=quiz" onclick="return handleQuizAccess(event, 'summary.html?mode=quiz')"
-                    class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-primary">เริ่มทำข้อสอบ</a>
-                <a href="summary.html" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold">อ่านสรุป</a>
+            <h1 class="fw-bold mb-2"><i class="fas fa-graduation-cap me-2"></i>ศูนย์เรียนรู้ & ตะลุยโจทย์ M.4 PREP</h1>
+            <p class="lead opacity-75 mb-4">สรุปเนื้อหาเข้ม และคลังข้อสอบจำลองสอบเข้า ม.4 ทุกวิชา</p>
+
+            <!-- ปุ่มสลับโหมด: อ่านสรุป vs ทำข้อสอบ -->
+            <div class="d-inline-flex bg-white bg-opacity-25 p-1 rounded-pill shadow-sm">
+                <div class="mode-tab active" id="tabSummary" onclick="switchMode('summary')">
+                    <i class="fas fa-file-alt me-2"></i>คลัง Short Note สรุป
+                </div>
+                <div class="mode-tab text-white" id="tabQuiz" onclick="switchMode('quiz')">
+                    <i class="fas fa-edit me-2" id="quizTabIcon"></i>คลังข้อสอบ & ตะลุยโจทย์
+                </div>
             </div>
         </div>
     </header>
 
-    <!-- Subject Cards Section -->
-    <section class="container my-5">
-        <div class="text-center mb-4">
-            <h2 class="fw-bold">เลือกวิชาที่ต้องการฝึก</h2>
-            <p class="text-secondary">แยกตามรายวิชาหลัก เพื่อการโฟกัสที่ตรงจุด</p>
-        </div>
-        <div class="row g-4 justify-content-center">
+    <!-- Main Content -->
+    <div class="container my-5">
 
-            <!-- คณิตศาสตร์ -->
-            <div class="col-6 col-md-2">
-                <a href="summary.html?mode=quiz&subject=math" onclick="return handleQuizAccess(event, 'summary.html?mode=quiz&subject=math')" class="card-link">
-                    <div class="card subject-card py-4 text-center h-100 rounded-4">
-                        <div class="text-primary subject-icon"><i class="fas fa-calculator"></i></div>
-                        <h5 class="fw-bold">คณิตศาสตร์</h5>
-                    </div>
-                </a>
-            </div>
-
-            <!-- วิทยาศาสตร์ -->
-            <div class="col-6 col-md-2">
-                <a href="summary.html?mode=quiz&subject=science" onclick="return handleQuizAccess(event, 'summary.html?mode=quiz&subject=science')" class="card-link">
-                    <div class="card subject-card py-4 text-center h-100 rounded-4">
-                        <div class="text-success subject-icon"><i class="fas fa-flask"></i></div>
-                        <h5 class="fw-bold">วิทยาศาสตร์</h5>
-                    </div>
-                </a>
-            </div>
-
-            <!-- ภาษาอังกฤษ -->
-            <div class="col-6 col-md-2">
-                <a href="summary.html?mode=quiz&subject=english" onclick="return handleQuizAccess(event, 'summary.html?mode=quiz&subject=english')" class="card-link">
-                    <div class="card subject-card py-4 text-center h-100 rounded-4">
-                        <div class="text-danger subject-icon"><i class="fas fa-language"></i></div>
-                        <h5 class="fw-bold">ภาษาอังกฤษ</h5>
-                    </div>
-                </a>
-            </div>
-
-            <!-- ภาษาไทย -->
-            <div class="col-6 col-md-2">
-                <a href="summary.html?mode=quiz&subject=thai" onclick="return handleQuizAccess(event, 'summary.html?mode=quiz&subject=thai')" class="card-link">
-                    <div class="card subject-card py-4 text-center h-100 rounded-4">
-                        <div class="text-warning subject-icon"><i class="fas fa-book-open"></i></div>
-                        <h5 class="fw-bold">ภาษาไทย</h5>
-                    </div>
-                </a>
-            </div>
-
-            <!-- สังคมศึกษา -->
-            <div class="col-6 col-md-2">
-                <a href="summary.html?mode=quiz&subject=society" onclick="return handleQuizAccess(event, 'summary.html?mode=quiz&subject=society')" class="card-link">
-                    <div class="card subject-card py-4 text-center h-100 rounded-4">
-                        <div class="text-info subject-icon"><i class="fas fa-globe-asia"></i></div>
-                        <h5 class="fw-bold">สังคมศึกษา</h5>
-                    </div>
-                </a>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- Latest Courses Section -->
-    <section class="container my-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold">คอร์สเรียนอัปเดตล่าสุด</h3>
-            <a href="summary.html" class="text-decoration-none">ดูทั้งหมด ></a>
+        <!-- แถบแจ้งคำค้นหา (แสดงเมื่อพิมพ์ค้นหามาจากหน้าแรก) -->
+        <div id="searchStatusBanner" class="alert alert-info d-none justify-content-between align-items-center rounded-pill px-4 mb-4">
+            <span><i class="fas fa-search me-2"></i>ผลการค้นหาสำหรับ: <strong id="searchKeywordText"></strong></span>
+            <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="clearSearchQuery()">
+                <i class="fas fa-times me-1"></i>ล้างคำค้นหา
+            </button>
         </div>
 
-        <div class="row g-4" id="courses-container">
-            <div class="col-12 text-center text-muted py-5">
+        <!-- ปุ่มตัวกรองวิชา -->
+        <div class="d-flex justify-content-center flex-wrap gap-2 mb-4" id="categoryFilters">
+            <button class="btn btn-outline-primary rounded-pill px-4 filter-btn active" data-subject="all" onclick="filterSubject('all', this)">ทั้งหมด</button>
+            <button class="btn btn-outline-primary rounded-pill px-4 filter-btn" data-subject="math" onclick="filterSubject('math', this)"><i class="fas fa-calculator me-1"></i>คณิตศาสตร์</button>
+            <button class="btn btn-outline-success rounded-pill px-4 filter-btn" data-subject="science" onclick="filterSubject('science', this)"><i class="fas fa-flask me-1"></i>วิทยาศาสตร์</button>
+            <button class="btn btn-outline-danger rounded-pill px-4 filter-btn" data-subject="english" onclick="filterSubject('english', this)"><i class="fas fa-language me-1"></i>ภาษาอังกฤษ</button>
+            <button class="btn btn-outline-warning rounded-pill px-4 filter-btn" data-subject="thai" onclick="filterSubject('thai', this)"><i class="fas fa-book-open me-1"></i>ภาษาไทย</button>
+            <button class="btn btn-outline-info rounded-pill px-4 filter-btn" data-subject="society" onclick="filterSubject('society', this)"><i class="fas fa-globe-asia me-1"></i>สังคมศึกษา</button>
+        </div>
+
+        <!-- รายการการ์ดแสดงผล -->
+        <div class="row g-4" id="mainCardsList">
+            <div class="col-12 text-center py-5">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2">กำลังโหลดข้อมูลคอร์สเรียน...</p>
+                <p class="mt-2 text-muted">กำลังโหลดข้อมูล...</p>
             </div>
         </div>
-    </section>
+
+    </div>
 
     <!-- Modal แจ้งเตือนโหมดทดลองเรียน (จำกัดสิทธิ์ทำข้อสอบ) -->
     <div class="modal fade" id="guestLimitModal" tabindex="-1" aria-hidden="true">
@@ -254,8 +173,8 @@
                     </div>
                     <h5 class="fw-bold mb-2">โหมดทดลองเรียน (Guest)</h5>
                     <p class="text-secondary small mb-4">
-                        คุณสามารถอ่านสรุปเนื้อหาและดูคอร์สเรียนได้ฟรีทั้งหมด<br>
-                        แต่หากต้องการ <strong>ทำข้อสอบและบันทึกผลวิเคราะห์คะแนน</strong> กรุณาเข้าสู่ระบบก่อนนะครับ
+                        ในโหมดทดลองเรียน คุณสามารถอ่านสรุปบทเรียนได้ฟรีไม่จำกัด<br>
+                        หากต้องการ <strong>ทำข้อสอบและวิเคราะห์จุดอ่อน</strong> กรุณาเข้าสู่ระบบก่อนนะครับ
                     </p>
                     <div class="d-flex justify-content-center gap-2">
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold text-secondary"
@@ -269,227 +188,406 @@
         </div>
     </div>
 
-    <!-- Modal ยืนยันการออกจากระบบ -->
-    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content rounded-4 border-0 shadow">
-                <div class="modal-body text-center p-4">
-                    <div class="text-warning mb-3">
-                        <i class="fas fa-exclamation-circle fa-3x"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2" id="logoutModalLabel">ยืนยันการออกจากระบบ</h5>
-                    <p class="text-muted small mb-4">คุณต้องการออกจากระบบใช่หรือไม่?</p>
-                    <div class="d-flex justify-content-center gap-2">
-                        <button type="button" class="btn btn-light rounded-pill px-4 btn-sm fw-bold text-secondary"
-                            data-bs-dismiss="modal">ยกเลิก</button>
-                        <button type="button" class="btn btn-danger rounded-pill px-4 btn-sm fw-bold"
-                            onclick="performLogout()">ยืนยัน</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="bg-dark text-white py-5 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4 mb-4">
-                    <h5 class="fw-bold">M.4 PREP</h5>
-                    <p class="small text-secondary">แพลตฟอร์มคลังข้อสอบและสรุปเนื้อหาออนไลน์ เพื่อเด็กไทย มุ่งเน้นคุณภาพ
-                        เข้าใจง่าย และเข้าถึงได้ทุกคน</p>
-                </div>
-                <div class="col-md-2 mb-4">
-                    <h6 class="fw-bold">เมนูหลัก</h6>
-                    <ul class="list-unstyled small text-secondary">
-                        <li><a href="index.html" class="text-decoration-none text-secondary">หน้าแรก</a></li>
-                        <li><a href="summary.html?mode=quiz" onclick="return handleQuizAccess(event, 'summary.html?mode=quiz')" class="text-decoration-none text-secondary">คลังข้อสอบ</a></li>
-                        <li><a href="summary.html?mode=summary" class="text-decoration-none text-secondary">สรุปเนื้อหา</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-2 mb-4">
-                    <h6 class="fw-bold">วิชาเรียน</h6>
-                    <ul class="list-unstyled small text-secondary">
-                        <li>คณิตศาสตร์</li>
-                        <li>วิทยาศาสตร์</li>
-                        <li>ภาษาอังกฤษ</li>
-                    </ul>
-                </div>
-                <div class="col-md-4 mb-4">
-                    <h6 class="fw-bold">ติดต่อเรา</h6>
-                    <p class="small text-secondary"><i class="fas fa-envelope me-2"></i> contact@m4prep.com</p>
-                    <p class="small text-secondary"><i class="fas fa-phone me-2"></i> 02-123-4567</p>
-                </div>
-            </div>
-            <hr class="border-secondary">
-            <div class="text-center small text-secondary">
-                © 2024 M.4 Prep Online. All rights reserved.
-            </div>
-        </div>
-    </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Script Supabase -->
     <script>
-        const SUPABASE_URL = 'https://jykdmzhqrcdyulztcota.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_kz9-wHYTu0nTM6Lxoi1EGg_LgfrbPvB';
+        // ระบบ Dark Mode
+        function updateThemeIcon() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = currentTheme === 'dark' ? 'fas fa-sun text-warning' : 'fas fa-moon';
+            }
+        }
 
+        function toggleDarkMode() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('m4prep_theme', newTheme);
+            updateThemeIcon();
+        }
+        updateThemeIcon();
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&')
+                .replace(/</g, '<')
+                .replace(/>/g, '>')
+                .replace(/"/g, '"');
+        }
+
+        // Config Supabase
+        const SUPABASE_URL = 'https://jykdmzhqrcdyulztcota.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5a2RtemhxcmNkeXVsenRjb3RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTg0MjcsImV4cCI6MjEwNTM5NDQyN30.Cz7joFgrCPLFyAhKlUL9azLcExXsskUEoAUBd0yc99E';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let isUserLoggedIn = false;
+        let isUserLoggedIn = Boolean(localStorage.getItem('user_email'));
         const guestLimitModal = new bootstrap.Modal(document.getElementById('guestLimitModal'));
 
-        // 📌 ฟังก์ชันตรวจสอบสิทธิ์ก่อนเข้าส่วนทำข้อสอบ
-        function handleQuizAccess(event, targetUrl) {
-            if (!isUserLoggedIn) {
-                event.preventDefault();
-                guestLimitModal.show();
-                return false;
+        let currentMode = 'summary';
+        let currentSubjectFilter = 'all';
+        let currentSearchQuery = '';
+
+        let allSummariesData = [];
+        let allQuizzesData = [];
+
+        let targetExamSetFromUrl = null;
+        let targetTopicIdFromUrl = null;
+
+        const subjectConfig = {
+            'math': { name: 'คณิตศาสตร์', badgeClass: 'bg-primary text-white', icon: 'fa-calculator' },
+            'science': { name: 'วิทยาศาสตร์', badgeClass: 'bg-success text-white', icon: 'fa-flask' },
+            'english': { name: 'ภาษาอังกฤษ', badgeClass: 'bg-danger text-white', icon: 'fa-language' },
+            'thai': { name: 'ภาษาไทย', badgeClass: 'bg-warning text-dark', icon: 'fa-book-open' },
+            'society': { name: 'สังคมศึกษา', badgeClass: 'bg-info text-white', icon: 'fa-globe-asia' },
+            'other': { name: 'วิชาทั่วไป', badgeClass: 'bg-secondary text-white', icon: 'fa-book' }
+        };
+
+        function getSubjectKey(item) {
+            if (!item) return 'other';
+
+            const directVal = String(
+                (typeof item === 'string' ? item : '') ||
+                item.subject ||
+                item.subject_id ||
+                item.category ||
+                item.subject_name ||
+                item.type ||
+                item.course_type ||
+                ''
+            ).toLowerCase().trim();
+
+            if (
+                directVal === 'science' ||
+                directVal === 'sci' ||
+                directVal === 'วิทย์' ||
+                directVal === 'วิทยาศาสตร์' ||
+                directVal === '2' ||
+                directVal.includes('sci') ||
+                directVal.includes('วิทย์')
+            ) {
+                return 'science';
             }
-            return true;
+
+            if (directVal === 'math' || directVal === 'คณิต' || directVal === 'คณิตศาสตร์' || directVal === '1' || directVal.includes('คณิต')) return 'math';
+            if (directVal === 'english' || directVal === 'eng' || directVal === 'ภาษาอังกฤษ' || directVal === '3' || directVal.includes('อังกฤษ')) return 'english';
+            if (directVal === 'thai' || directVal === 'ภาษาไทย' || directVal === 'ไทย' || directVal === '4' || directVal.includes('ไทย')) return 'thai';
+            if (directVal === 'society' || directVal === 'soc' || directVal === 'สังคมศึกษา' || directVal === 'สังคม' || directVal === '5' || directVal.includes('สังคม')) return 'society';
+
+            const textContent = (String(item.title || item.name || item.exam_set || item.topic || '') + ' ' + String(item.description || item.detail || '')).toLowerCase();
+
+            if (['วิทย์', 'science', 'sci', 'ฟิสิกส์', 'เคมี', 'ชีว', 'ดารา', 'โลก', 'ธรณี', 'เซลล์', 'พืช', 'สัตว์', 'แรง', 'พลังงาน', 'ไฟฟ้า', 'อะตอม', 'สาร'].some(k => textContent.includes(k))) return 'science';
+            if (['คณิต', 'math', 'เซต', 'สมการ', 'ตรีโกณ', 'ฟังก์ชัน', 'เลข', 'สถิติ', 'ความน่าจะเป็น'].some(k => textContent.includes(k))) return 'math';
+            if (['อังกฤษ', 'english', 'eng', 'vocab', 'grammar', 'tense'].some(k => textContent.includes(k))) return 'english';
+            if (['ไทย', 'thai', 'วรรณคดี', 'หลักภาษา', 'โคลง', 'กลอน'].some(k => textContent.includes(k))) return 'thai';
+            if (['สังคม', 'social', 'ประวัติ', 'ภูมิศาสตร์', 'ศาสนา', 'เศรษฐ'].some(k => textContent.includes(k))) return 'society';
+
+            return 'other';
         }
 
-        // 📌 ตรวจสอบสถานะ User และแสดงเมนู Admin ถ้าระบบจำว่าเป็น admin
-        async function checkUserSession() {
-            const container = document.getElementById('navAuthContainer');
-            if (!container) return;
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuthStatus();
+            parseUrlParameters();
+            fetchAllData();
+        });
 
-            const { data: { session } } = await _supabase.auth.getSession();
-            const user = session?.user;
-            const userEmail = user?.email || localStorage.getItem('user_email');
-            const userRole = localStorage.getItem('user_role');
+        async function checkAuthStatus() {
+            try {
+                const { data: { session } } = await _supabase.auth.getSession();
+                const userEmail = session?.user?.email || localStorage.getItem('user_email');
+                isUserLoggedIn = Boolean(userEmail);
+            } catch (e) {
+                console.warn('Auth check warning:', e);
+            }
 
-            if (userEmail) {
-                isUserLoggedIn = true;
-                const username = userEmail.split('@')[0];
-                const isAdmin = userRole === 'admin';
+            if (!isUserLoggedIn) {
+                document.getElementById('guestBadge').classList.remove('d-none');
+                document.getElementById('quizTabIcon').className = 'fas fa-lock me-2';
+            }
+        }
 
-                container.innerHTML = `
-                    <div class="dropdown">
-                        <button class="user-dropdown-btn dropdown-toggle mt-1" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas ${isAdmin ? 'fa-user-shield text-danger' : 'fa-user-circle'} fs-5"></i>
-                            <span>${username} ${isAdmin ? '<span class="badge bg-danger ms-1">Admin</span>' : ''}</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2" aria-labelledby="userDropdown">
-                            ${isAdmin ? `
-                                <li>
-                                    <a class="dropdown-item text-primary fw-bold py-2" href="admin.html">
-                                        <i class="fas fa-tools me-2"></i>กลับหน้าจัดการ (Admin)
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                            ` : ''}
-                            <li>
-                                <button class="dropdown-item text-danger py-2" data-bs-toggle="modal" data-bs-target="#logoutModal">
-                                    <i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ
-                                </button>
-                            </li>
-                        </ul>
+        function parseUrlParameters() {
+            const params = new URLSearchParams(window.location.search);
+            const modeParam = params.get('mode');
+            const subjectParam = params.get('subject');
+            const examSetParam = params.get('exam_set');
+            const topicParam = params.get('topic_id') || params.get('topic');
+            const searchParam = params.get('q');
+
+            if (modeParam && (modeParam === 'summary' || modeParam === 'quiz')) {
+                if (modeParam === 'quiz' && !isUserLoggedIn) {
+                    currentMode = 'summary';
+                    guestLimitModal.show();
+                } else {
+                    currentMode = modeParam;
+                }
+            }
+
+            if (subjectParam) {
+                currentSubjectFilter = getSubjectKey(subjectParam) !== 'other' ? getSubjectKey(subjectParam) : subjectParam;
+            }
+
+            if (examSetParam) {
+                targetExamSetFromUrl = examSetParam;
+            }
+
+            if (topicParam) {
+                targetTopicIdFromUrl = topicParam;
+            }
+
+            if (searchParam && searchParam.trim() !== '') {
+                currentSearchQuery = searchParam.trim().toLowerCase();
+                const banner = document.getElementById('searchStatusBanner');
+                banner.classList.remove('d-none');
+                banner.classList.add('d-flex');
+                document.getElementById('searchKeywordText').textContent = searchParam.trim();
+            }
+
+            syncUIWithState();
+        }
+
+        function clearSearchQuery() {
+            currentSearchQuery = '';
+            const banner = document.getElementById('searchStatusBanner');
+            banner.classList.add('d-none');
+            banner.classList.remove('d-flex');
+            renderCurrentView();
+        }
+
+        function syncUIWithState() {
+            if (currentMode === 'summary') {
+                document.getElementById('tabSummary').className = 'mode-tab active';
+                document.getElementById('tabQuiz').className = 'mode-tab text-white';
+            } else {
+                document.getElementById('tabSummary').className = 'mode-tab text-white';
+                document.getElementById('tabQuiz').className = 'mode-tab active';
+            }
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.getAttribute('data-subject') === currentSubjectFilter) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        async function fetchAllData() {
+            try {
+                const [resSummaries, resQuizzes] = await Promise.all([
+                    _supabase.from('courses').select('*').order('id', { ascending: false }),
+                    _supabase.from('quizzes').select('*').order('id', { ascending: true })
+                ]);
+
+                allSummariesData = resSummaries.data || [];
+                allQuizzesData = resQuizzes.data || [];
+
+                renderCurrentView();
+
+                if (currentMode === 'quiz' && isUserLoggedIn) {
+                    const subParam = currentSubjectFilter !== 'all' ? `&subject=${encodeURIComponent(currentSubjectFilter)}` : '';
+                    if (targetExamSetFromUrl) {
+                        window.location.href = `quiz.html?exam_set=${encodeURIComponent(targetExamSetFromUrl)}${subParam}`;
+                    } else if (targetTopicIdFromUrl) {
+                        window.location.href = `quiz.html?topic_id=${encodeURIComponent(targetTopicIdFromUrl)}${subParam}`;
+                    }
+                }
+
+            } catch (err) {
+                console.error('Error loading data:', err);
+                document.getElementById('mainCardsList').innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-exclamation-triangle text-warning display-4 mb-3"></i>
+                        <p class="text-muted">เกิดข้อผิดพลาดในการดึงข้อมูลจากระบบ</p>
                     </div>
                 `;
+            }
+        }
 
-                if (isAdmin && !document.getElementById('floatingAdminBtn')) {
-                    const adminBtn = document.createElement('a');
-                    adminBtn.id = 'floatingAdminBtn';
-                    adminBtn.href = 'admin.html';
-                    adminBtn.className = 'btn btn-danger position-fixed bottom-0 end-0 m-4 rounded-pill shadow-lg px-3 py-2 fw-bold';
-                    adminBtn.style.zIndex = '9999';
-                    adminBtn.innerHTML = '<i class="fas fa-user-cog me-2"></i>กลับหน้าจัดการ Admin';
-                    document.body.appendChild(adminBtn);
-                }
+        function switchMode(mode) {
+            if (mode === 'quiz' && !isUserLoggedIn) {
+                guestLimitModal.show();
+                return;
+            }
+
+            currentMode = mode;
+            syncUIWithState();
+            renderCurrentView();
+        }
+
+        function filterSubject(subjectKey, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            currentSubjectFilter = subjectKey;
+            renderCurrentView();
+        }
+
+        function renderCurrentView() {
+            if (currentMode === 'summary') {
+                renderSummariesView();
             } else {
-                isUserLoggedIn = false;
-                container.innerHTML = `
-                    <span class="badge bg-warning text-dark me-2 rounded-pill">โหมดทดลองเรียน</span>
-                    <a href="login.html" class="btn btn-primary btn-sm rounded-pill px-4 mt-1">เข้าสู่ระบบ</a>
-                `;
+                renderQuizzesView();
             }
         }
 
-        // 📌 ฟังก์ชันยืนยันออกจากระบบ
-        async function performLogout() {
-            try {
-                const modalElement = document.getElementById('logoutModal');
-                if (modalElement) {
-                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                    if (modalInstance) modalInstance.hide();
-                }
+        // แสดงผลรวมสรุปบทเรียน (เข้าดูได้ทุกคน)
+        function renderSummariesView() {
+            const listContainer = document.getElementById('mainCardsList');
+            let items = allSummariesData;
 
-                const { error } = await _supabase.auth.signOut();
-                if (error) throw error;
-
-                localStorage.removeItem('user_role');
-                localStorage.removeItem('user_email');
-
-                window.location.href = 'login.html';
-            } catch (err) {
-                console.error('Logout error:', err);
-                alert("เกิดข้อผิดพลาดในการออกจากระบบ: " + err.message);
+            if (currentSubjectFilter !== 'all') {
+                items = items.filter(item => getSubjectKey(item) === currentSubjectFilter);
             }
-        }
 
-        async function loadCourses() {
-            const container = document.getElementById('courses-container');
+            if (currentSearchQuery) {
+                items = items.filter(item => {
+                    const text = [item.title, item.name, item.subject, item.description, item.detail]
+                        .filter(Boolean).join(' ').toLowerCase();
+                    return text.includes(currentSearchQuery);
+                });
+            }
 
-            try {
-                const { data: courses, error } = await _supabase
-                    .from('courses')
-                    .select('*')
-                    .order('id', { ascending: false });
+            if (items.length === 0) {
+                listContainer.innerHTML = getEmptyStateHTML('ยังไม่มีเนื้อหาสรุปในหมวดวิชานี้');
+                return;
+            }
 
-                if (error) throw error;
+            listContainer.innerHTML = items.map(item => {
+                const subKey = getSubjectKey(item);
+                const config = subjectConfig[subKey] || subjectConfig['other'];
 
-                if (!courses || courses.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-12 text-center text-muted py-5">
-                            <i class="fas fa-folder-open fa-3x mb-3"></i>
-                            <p>ยังไม่มีคอร์สเรียนในขณะนี้</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                container.innerHTML = '';
-
-                courses.forEach(course => {
-                    const imageUrl = course.image_url || 'https://placehold.co/400x300/2563eb/white?text=M.4+Course';
-                    const priceBadge = course.price ? `${course.price} บาท` : 'เรียนฟรี';
-
-                    container.innerHTML += `
-                        <div class="col-md-3">
-                            <div class="card content-card h-100 rounded-3 overflow-hidden">
-                                <div class="position-relative">
-                                    <img src="${imageUrl}" class="card-img-top" alt="${course.title || 'Course Image'}">
-                                    <span class="type-badge text-primary"><i class="fas fa-book me-1"></i> คอร์สเรียน</span>
+                return `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 item-card p-3">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge badge-subject ${config.badgeClass}">
+                                        <i class="fas ${config.icon} me-1"></i>${escapeHtml(config.name)}
+                                    </span>
                                 </div>
-                                <div class="card-body d-flex flex-column justify-content-between">
-                                    <div>
-                                        <span class="badge bg-primary mb-2">${priceBadge}</span>
-                                        <h5 class="card-title fw-bold">${course.title || course.name || 'ไม่มีชื่อคอร์ส'}</h5>
-                                        <p class="card-text text-secondary small">${course.description || course.detail || 'ไม่มีรายละเอียดเพิ่มเติม'}</p>
-                                    </div>
-                                    <a href="study.html?id=${course.id}" class="btn btn-outline-primary btn-sm w-100 mt-3 rounded-pill">เริ่มเรียนเลย</a>
-                                </div>
+                                <h5 class="fw-bold mb-2">${escapeHtml(item.title || item.name || item.course_name || 'ไม่มีชื่อบทเรียน')}</h5>
+                                <p class="text-secondary small flex-grow-1 mb-4">${escapeHtml(item.description || item.detail || item.summary || 'ไม่มีคำอธิบายเพิ่มเติม')}</p>
+                                
+                                <a href="study.html?id=${encodeURIComponent(item.id)}" class="btn btn-primary rounded-pill w-100 fw-bold">
+                                    <i class="fas fa-book-reader me-2"></i>อ่านสรุปบทเรียน
+                                </a>
                             </div>
                         </div>
-                    `;
-                });
-
-            } catch (err) {
-                console.error('Error fetching courses:', err);
-                container.innerHTML = `
-                    <div class="col-12 text-center text-danger py-5">
-                        <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
-                        <p>เกิดข้อผิดพลาดในการโหลดข้อมูลคอร์สเรียน</p>
                     </div>
                 `;
-            }
+            }).join('');
         }
 
-        checkUserSession();
-        loadCourses();
+        // แสดงผลชุดข้อสอบ (รวมตามชุดข้อสอบ exam_set และแสดงหัวข้อเรื่องทั้งหมดที่ครอบคลุมในชุดนั้น)
+        function renderQuizzesView() {
+            if (!isUserLoggedIn) {
+                switchMode('summary');
+                return;
+            }
+
+            const listContainer = document.getElementById('mainCardsList');
+            const examSetMap = new Map();
+
+            allQuizzesData.forEach(q => {
+                const subKey = getSubjectKey(q);
+                const qTopicName = String(q.topic_name || q.topic || q.topic_title || 'ข้อสอบทั่วไป').trim();
+                const examSetName = String(q.exam_set || qTopicName).trim();
+                const mapKey = `${subKey}::${examSetName.toLowerCase()}`;
+
+                if (!examSetMap.has(mapKey)) {
+                    examSetMap.set(mapKey, {
+                        examSetName: examSetName,
+                        subjectKey: subKey,
+                        topics: new Set(),
+                        quizzes: []
+                    });
+                }
+
+                const group = examSetMap.get(mapKey);
+                if (qTopicName) group.topics.add(qTopicName);
+                group.quizzes.push(q);
+            });
+
+            let examSetList = Array.from(examSetMap.values());
+
+            if (currentSubjectFilter !== 'all') {
+                examSetList = examSetList.filter(g => g.subjectKey === currentSubjectFilter);
+            }
+
+            if (currentSearchQuery) {
+                examSetList = examSetList.filter(g => {
+                    const text = [
+                        g.examSetName,
+                        ...Array.from(g.topics),
+                        ...g.quizzes.map(q => q.question)
+                    ].filter(Boolean).join(' ').toLowerCase();
+                    return text.includes(currentSearchQuery);
+                });
+            }
+
+            if (examSetList.length === 0) {
+                listContainer.innerHTML = getEmptyStateHTML('ยังไม่มีชุดข้อสอบในหมวดวิชานี้');
+                return;
+            }
+
+            listContainer.innerHTML = examSetList.map(group => {
+                const config = subjectConfig[group.subjectKey] || subjectConfig['other'];
+                const count = group.quizzes.length;
+                const topicsArray = Array.from(group.topics);
+                const isMixedSet = topicsArray.length > 1;
+
+                const topicSummaryHTML = isMixedSet
+                    ? `<div class="mb-2">
+                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill mb-2">
+                                <i class="fas fa-layer-group me-1"></i>ข้อสอบรวม ${topicsArray.length} หัวข้อ
+                            </span>
+                            <p class="text-secondary small mb-0">
+                                <strong>ครอบคลุมเรื่อง:</strong> ${escapeHtml(topicsArray.join(', '))}
+                            </p>
+                       </div>`
+                    : `<p class="text-secondary small mb-0">
+                            <i class="fas fa-tag text-primary me-1"></i><strong>หัวข้อเรื่อง:</strong> ${escapeHtml(topicsArray[0] || group.examSetName)}
+                       </p>`;
+
+                return `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 item-card p-3 border-start border-4 border-primary">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge badge-subject ${config.badgeClass}">
+                                        <i class="fas ${config.icon} me-1"></i>${escapeHtml(config.name)}
+                                    </span>
+                                    <span class="badge bg-body-secondary text-body rounded-pill border">
+                                        <i class="fas fa-question-circle me-1 text-primary"></i>${count} ข้อ
+                                    </span>
+                                </div>
+                                <h5 class="fw-bold mb-2">${escapeHtml(group.examSetName)}</h5>
+                                <div class="flex-grow-1 mb-4">
+                                    ${topicSummaryHTML}
+                                </div>
+                                
+                                <a href="quiz.html?exam_set=${encodeURIComponent(group.examSetName)}&subject=${encodeURIComponent(group.subjectKey)}" class="btn btn-primary rounded-pill w-100 fw-bold">
+                                    <i class="fas fa-pen-to-square me-2"></i>เริ่มทำแบบทดสอบ
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getEmptyStateHTML(msg) {
+            return `
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-folder-open text-muted display-1 mb-3"></i>
+                    <h5 class="text-muted">${escapeHtml(msg)}</h5>
+                    <p class="small text-secondary">เมื่อระบบมีการอัปเดตข้อมูลเพิ่มเติม จะแสดงขึ้นที่นี่อัตโนมัติ</p>
+                </div>
+            `;
+        }
     </script>
+
 </body>
 
 </html>

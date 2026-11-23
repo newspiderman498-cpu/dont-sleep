@@ -1,33 +1,85 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-bs-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M.4 Tutor MOOC - ติวเข้มเข้า ม.4</title>
+    <script src="theme.js"></script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- 1. ดึง SDK Supabase มาใช้งาน -->
+    <!-- SDK Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- โหลดค่าธีม Dark/Light Mode ทันที -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('m4prep_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
+
     <style>
-        body { font-family: 'Prompt', sans-serif; background-color: #f8f9fa; }
-        .hero-section { background: linear-gradient(135deg, #2563eb 0%, #0d6efd 100%); color: white; padding: 80px 0; text-align: center; }
-        .subject-card { transition: transform 0.3s; cursor: pointer; border: none; background: white; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-        .subject-card:hover { transform: translateY(-5px); background-color: #f0f8ff; }
-        .subject-icon { font-size: 3rem; margin-bottom: 15px; }
-        .card-link { text-decoration: none; color: inherit; display: block; height: 100%; }
-        .nav-tabs .nav-link { color: #6c757d; font-weight: 600; border: none; border-bottom: 2px solid transparent; }
-        .nav-tabs .nav-link.active { color: #2563eb; border-bottom: 2px solid #2563eb; background: none; }
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #2563eb 0%, #0d6efd 100%);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .subject-card {
+            transition: transform 0.3s, background-color 0.3s;
+            cursor: pointer;
+            border: 1px solid var(--bs-border-color-translucent);
+            background-color: var(--bs-card-bg);
+            color: var(--bs-body-color);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .subject-card:hover {
+            transform: translateY(-5px);
+            background-color: var(--bs-tertiary-bg);
+        }
+
+        .subject-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .card-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            height: 100%;
+        }
+
+        .nav-tabs .nav-link {
+            color: #6c757d;
+            font-weight: 600;
+            border: none;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+            background: none;
+        }
 
         /* ปุ่ม User Profile แบบวงรีขอบสีฟ้า */
         .user-dropdown-btn {
             border: 1.5px solid #0d6efd;
             color: #0d6efd;
-            background-color: #ffffff;
+            background-color: var(--bs-body-bg);
             border-radius: 50rem;
             padding: 5px 16px;
             font-weight: 500;
@@ -38,12 +90,25 @@
             transition: all 0.2s ease;
         }
 
-        .user-dropdown-btn:hover, 
+        .user-dropdown-btn:hover,
         .user-dropdown-btn:focus,
         .user-dropdown-btn[aria-expanded="true"] {
-            background-color: #f0f7ff;
+            background-color: var(--bs-tertiary-bg);
             color: #0d6efd;
             border-color: #0d6efd;
+        }
+
+        .theme-toggle-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--bs-border-color);
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+            cursor: pointer;
         }
     </style>
 </head>
@@ -51,22 +116,43 @@
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm sticky-top">
         <div class="container">
-            <a class="navbar-brand fw-bold text-primary" href="index.html"><i class="fas fa-book-reader"></i> M.4 PREP</a>
+            <a class="navbar-brand fw-bold text-primary" href="index.html">
+                <i class="fas fa-book-reader me-1"></i> M.4 PREP
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <form class="d-flex mx-auto w-50">
-                    <input class="form-control me-2 rounded-pill" type="search" placeholder="ค้นหาข้อสอบ หรือ บทความ..." aria-label="Search">
-                    <button class="btn btn-outline-primary rounded-pill" type="submit"><i class="fas fa-search"></i></button>
+                <!-- ช่องค้นหา ส่งคำค้นไปที่ summary.html -->
+                <form class="d-flex mx-auto w-50 my-2 my-lg-0" action="summary.html" method="GET">
+                    <input type="hidden" name="mode" value="summary">
+                    <input class="form-control me-2 rounded-pill" type="search" name="q"
+                        placeholder="ค้นหาสรุปเนื้อหา หรือ บทเรียน..." aria-label="Search">
+                    <button class="btn btn-outline-primary rounded-pill" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
                 </form>
+
                 <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item"><a class="nav-link restricted-link" href="summary.html">สรุปเนื้อหา&คลังข้อสอบ</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="summary.html?mode=summary">สื่อการเรียน & สรุป</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link member-only-link" href="analytics.html" data-feature="วิเคราะห์คะแนนสอบ">
+                            วิเคราะห์คะแนน <i class="fas fa-lock text-warning small ms-1 guest-lock-icon"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <button class="theme-toggle-btn" onclick="handleThemeToggle()" title="เปลี่ยนโหมดมืด/สว่าง">
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </button>
+                    </li>
                     <li class="nav-item ms-2" id="authNavContainer">
-                        <!-- ปุ่มจะแสดงตามสถานะผู้ใช้ผ่าน JavaScript -->
-                        <button class="btn btn-primary btn-sm rounded-pill px-4 mt-1" data-bs-toggle="modal" data-bs-target="#authModal">เข้าสู่ระบบ / สมัครสมาชิก</button>
+                        <button class="btn btn-primary btn-sm rounded-pill px-4 mt-1" onclick="openAuthModalClean()">
+                            เข้าสู่ระบบ / สมัครสมาชิก
+                        </button>
                     </li>
                 </ul>
             </div>
@@ -78,22 +164,27 @@
         <div class="container">
             <h1 class="display-4 fw-bold">ฝึกทำโจทย์ & อ่านสรุปเข้ม</h1>
             <p class="lead mb-4">คลังข้อสอบเสมือนจริงและ Short Note สรุปเนื้อหา พร้อมสอบเข้า ม.4</p>
-            <div class="d-flex justify-content-center gap-3">
-                <a href="#subjects" class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-primary restricted-link">เริ่มทำข้อสอบ</a>
-                <a href="summary.html" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold restricted-link">อ่านสรุป</a>
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="summary.html?mode=quiz" data-feature="ทำข้อสอบ"
+                    class="btn btn-light btn-lg rounded-pill px-5 fw-bold text-primary member-only-link">
+                    <i class="fas fa-lock text-warning me-2 guest-lock-icon"></i>เริ่มทำข้อสอบ
+                </a>
+                <a href="summary.html?mode=summary" class="btn btn-outline-light btn-lg rounded-pill px-5 fw-bold">
+                    <i class="fas fa-book-open me-2"></i>อ่านสรุปฟรี
+                </a>
             </div>
         </div>
     </header>
 
-    <!-- Subject Section -->
+    <!-- Subject Section (เปิดให้ Guest กดเข้าอ่านสรุปเนื้อหาของแต่ละวิชาได้) -->
     <section class="container my-5" id="subjects">
         <div class="text-center mb-4">
-            <h2 class="fw-bold">เลือกวิชาที่ต้องการฝึก</h2>
-            <p class="text-muted">แยกตามรายวิชาหลัก เพื่อการโฟกัสที่ตรงจุด</p>
+            <h2 class="fw-bold">เลือกวิชาที่ต้องการเรียน</h2>
+            <p class="text-secondary">เข้าอ่านสื่อการเรียนและ Short Note สรุปเนื้อหาได้ฟรีทุกวิชา</p>
         </div>
         <div class="row g-4 justify-content-center">
             <div class="col-6 col-md-2">
-                <a href="learning/math/math.html" class="card-link restricted-link">
+                <a href="summary.html?mode=summary&subject=math" class="card-link">
                     <div class="card subject-card py-4 text-center h-100 rounded-4">
                         <div class="text-primary subject-icon"><i class="fas fa-calculator"></i></div>
                         <h5 class="fw-bold">คณิตศาสตร์</h5>
@@ -101,15 +192,15 @@
                 </a>
             </div>
             <div class="col-6 col-md-2">
-                <a href="learning/science/science.html" class="card-link restricted-link">
+                <a href="summary.html?mode=summary&subject=science" class="card-link">
                     <div class="card subject-card py-4 text-center h-100 rounded-4">
                         <div class="text-success subject-icon"><i class="fas fa-flask"></i></div>
-                        <h5 class="fw-bold">วิทยาศาสตร์</h5> 
+                        <h5 class="fw-bold">วิทยาศาสตร์</h5>
                     </div>
                 </a>
             </div>
             <div class="col-6 col-md-2">
-                <a href="learning/english/english.html" class="card-link restricted-link">
+                <a href="summary.html?mode=summary&subject=english" class="card-link">
                     <div class="card subject-card py-4 text-center h-100 rounded-4">
                         <div class="text-danger subject-icon"><i class="fas fa-language"></i></div>
                         <h5 class="fw-bold">ภาษาอังกฤษ</h5>
@@ -117,7 +208,7 @@
                 </a>
             </div>
             <div class="col-6 col-md-2">
-                <a href="learning/thai/thai.html" class="card-link restricted-link">
+                <a href="summary.html?mode=summary&subject=thai" class="card-link">
                     <div class="card subject-card py-4 text-center h-100 rounded-4">
                         <div class="text-warning subject-icon"><i class="fas fa-book-open"></i></div>
                         <h5 class="fw-bold">ภาษาไทย</h5>
@@ -125,7 +216,7 @@
                 </a>
             </div>
             <div class="col-6 col-md-2">
-                <a href="learning/society/society.html" class="card-link restricted-link">
+                <a href="summary.html?mode=summary&subject=society" class="card-link">
                     <div class="card subject-card py-4 text-center h-100 rounded-4">
                         <div class="text-info subject-icon"><i class="fas fa-globe-asia"></i></div>
                         <h5 class="fw-bold">สังคมศึกษา</h5>
@@ -135,9 +226,9 @@
         </div>
     </section>
 
-    <!-- Contact & Poster Section (ส่วนโปสเตอร์/ติดต่อเราด้านล่าง) -->
+    <!-- Contact & Poster Section -->
     <section class="container my-5" id="contact-poster">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
             <div class="row g-0 align-items-center">
                 <div class="col-md-6 bg-primary text-white p-4 p-md-5 text-center text-md-start">
                     <span class="badge bg-white text-primary rounded-pill px-3 py-2 mb-3 fw-bold">สอบถามข้อมูลเพิ่มเติม</span>
@@ -150,12 +241,12 @@
                     </div>
                 </div>
                 <div class="col-md-6 p-4 p-md-5 text-center">
-                    <div class="p-4 border border-2 border-dashed rounded-4 bg-light">
+                    <div class="p-4 border border-2 border-dashed rounded-4 bg-body-tertiary">
                         <i class="fas fa-bullhorn text-primary fa-3x mb-3"></i>
                         <h5 class="fw-bold mb-2">โปสเตอร์ข่าวสาร & ติวฟรี</h5>
-                        <p class="text-muted small mb-4">อัปเดตข่าวสารการสอบเข้า ม.4 แนวข้อสอบใหม่ และกิจกรรมติวฟรีผ่านช่องทางโซเชียลมีเดีย</p>
-                        <a href="#" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
-                            <i class="fab fa-facebook me-2"></i>ติดตามแฟนเพจ M.4 Prep
+                        <p class="text-secondary small mb-4">อัปเดตข่าวสารการสอบเข้า ม.4 แนวข้อสอบใหม่ และกิจกรรมติวฟรีผ่านช่องทางโซเชียลมีเดีย</p>
+                        <a href="summary.html?mode=summary" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                            <i class="fas fa-book-reader me-2"></i>เข้าสู่คลังสื่อการเรียนฟรี
                         </a>
                     </div>
                 </div>
@@ -163,7 +254,7 @@
         </div>
     </section>
 
-    <!-- Modal เข้าสู่ระบบ / สมัครสมาชิก -->
+    <!-- Modal เข้าสู่ระบบ / สมัครสมาชิก (ใช้แค่ชื่อผู้ใช้ + รหัสผ่าน ไม่ต้องใช้อีเมล) -->
     <div class="modal fade" id="authModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 shadow-lg">
@@ -171,13 +262,18 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 pt-2">
+                    <!-- แถบแจ้งเตือนเมื่อกดเข้าฟีเจอร์เฉพาะสมาชิก -->
+                    <div id="authModalNotice" class="alert alert-warning small rounded-3 py-2 px-3 d-none">
+                        <i class="fas fa-lock me-1"></i> กรุณาเข้าสู่ระบบเพื่อใช้งานส่วนนี้
+                    </div>
+
                     <!-- แท็บสลับหน้า -->
                     <ul class="nav nav-tabs justify-content-center mb-4" id="authTab" role="tablist">
                         <li class="nav-item">
                             <button class="nav-link active fs-5" id="login-tab" data-bs-toggle="tab" data-bs-target="#login-pane">เข้าสู่ระบบ</button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link fs-5" id="register-tab" data-bs-toggle="tab" data-bs-target="#register-pane">สมัครสมาชิก</button>
+                            <button class="nav-link fs-5" id="register-tab" data-bs-toggle="tab" data-bs-target="#register-pane">สร้างบัญชีใหม่</button>
                         </li>
                     </ul>
 
@@ -186,12 +282,14 @@
                         <div class="tab-pane fade show active" id="login-pane">
                             <form class="text-start mb-3" onsubmit="performLogin(event)">
                                 <div class="mb-3">
-                                    <label class="form-label small fw-bold">อีเมล</label>
-                                    <input type="email" id="loginEmail" class="form-control rounded-pill" placeholder="name@example.com" required>
+                                    <label class="form-label small fw-bold">ชื่อผู้ใช้ (Username)</label>
+                                    <input type="text" id="loginUsername" class="form-control rounded-pill"
+                                        placeholder="กรอกชื่อผู้ใช้ของคุณ เช่น somchai99" autocomplete="username" required>
                                 </div>
                                 <div class="mb-4">
                                     <label class="form-label small fw-bold">รหัสผ่าน</label>
-                                    <input type="password" id="loginPassword" class="form-control rounded-pill" placeholder="••••••••" required>
+                                    <input type="password" id="loginPassword" class="form-control rounded-pill"
+                                        placeholder="••••••••" autocomplete="current-password" required>
                                 </div>
                                 <button type="submit" id="btnLogin" class="btn btn-primary w-100 rounded-pill py-2 fw-bold mb-2">
                                     เข้าสู่ระบบ
@@ -199,19 +297,22 @@
                             </form>
                         </div>
 
-                        <!-- แท็บ 2: สมัครสมาชิก -->
+                        <!-- แท็บ 2: สร้างบัญชีใหม่ (ไม่ต้องใช้อีเมล) -->
                         <div class="tab-pane fade" id="register-pane">
                             <form class="text-start mb-3" onsubmit="performRegister(event)">
                                 <div class="mb-3">
-                                    <label class="form-label small fw-bold">อีเมลที่ใช้สมัคร</label>
-                                    <input type="email" id="regEmail" class="form-control rounded-pill" placeholder="name@example.com" required>
+                                    <label class="form-label small fw-bold">ตั้งชื่อผู้ใช้ (ไม่ต้องใช้อีเมล)</label>
+                                    <input type="text" id="regUsername" class="form-control rounded-pill"
+                                        placeholder="ภาษาอังกฤษหรือตัวเลข เช่น somchai99" autocomplete="username" required>
+                                    <div class="form-text small">ใช้ภาษาอังกฤษ (a-z) หรือตัวเลข (0-9) ห้ามเว้นวรรค</div>
                                 </div>
                                 <div class="mb-4">
-                                    <label class="form-label small fw-bold">กำหนดรหัสผ่าน (อย่างน้อย 6 ตัว)</label>
-                                    <input type="password" id="regPassword" class="form-control rounded-pill" placeholder="••••••••" minlength="6" required>
+                                    <label class="form-label small fw-bold">ตั้งรหัสผ่าน (อย่างน้อย 6 ตัว)</label>
+                                    <input type="password" id="regPassword" class="form-control rounded-pill"
+                                        placeholder="••••••••" minlength="6" autocomplete="new-password" required>
                                 </div>
                                 <button type="submit" id="btnRegister" class="btn btn-success w-100 rounded-pill py-2 fw-bold mb-2">
-                                    ยืนยันการสมัครสมาชิก
+                                    สร้างบัญชีและเข้าใช้งานทันที
                                 </button>
                             </form>
                         </div>
@@ -219,11 +320,11 @@
 
                     <div class="position-relative my-4">
                         <hr class="text-muted opacity-25">
-                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 text-muted small">หรือ</span>
+                        <span class="position-absolute top-50 start-50 translate-middle bg-body px-2 text-secondary small">หรือ</span>
                     </div>
 
                     <button type="button" class="btn btn-outline-secondary w-100 rounded-pill py-2" onclick="continueAsGuest()">
-                        <i class="fas fa-user-secret me-2"></i>ทดลองเรียน (ไม่ต้องล็อกอิน)
+                        <i class="fas fa-book-reader me-2"></i>ทดลองเรียน (อ่านสื่อการเรียน & สรุปฟรี)
                     </button>
                 </div>
             </div>
@@ -239,7 +340,7 @@
                         <i class="fas fa-exclamation-circle fa-3x"></i>
                     </div>
                     <h5 class="fw-bold mb-2" id="logoutModalLabel">ยืนยันการออกจากระบบ</h5>
-                    <p class="text-muted small mb-4">คุณต้องการออกจากระบบใช่หรือไม่?</p>
+                    <p class="text-secondary small mb-4">คุณต้องการออกจากระบบใช่หรือไม่?</p>
                     <div class="d-flex justify-content-center gap-2">
                         <button type="button" class="btn btn-light rounded-pill px-4 btn-sm fw-bold text-secondary" data-bs-dismiss="modal">ยกเลิก</button>
                         <button type="button" class="btn btn-danger rounded-pill px-4 btn-sm fw-bold" onclick="performLogout()">ยืนยัน</button>
@@ -251,24 +352,58 @@
 
     <footer class="bg-dark text-white py-5 mt-5">
         <div class="container text-center small text-secondary">
-            &copy; 2026 M.4 Prep Online. All rights reserved.
+            © 2026 M.4 Prep Online. All rights reserved.
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        function syncThemeIcon() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = currentTheme === 'dark' ? 'fas fa-sun text-warning' : 'fas fa-moon';
+            }
+        }
+
+        function handleThemeToggle() {
+            if (typeof toggleDarkMode === 'function') {
+                toggleDarkMode();
+            } else {
+                const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-bs-theme', newTheme);
+                localStorage.setItem('m4prep_theme', newTheme);
+            }
+            syncThemeIcon();
+        }
+        syncThemeIcon();
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&')
+                .replace(/</g, '<')
+                .replace(/>/g, '>')
+                .replace(/"/g, '"');
+        }
+
         const SUPABASE_URL = 'https://jykdmzhqrcdyulztcota.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_kz9-wHYTu0nTM6Lxoi1EGg_LgfrbPvB';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 📌 กำหนดอีเมลของแอดมินที่นี่
-        const ADMIN_EMAIL = 'admin@m4prep.com'; 
+        const ADMIN_EMAIL = 'admin@m4prep.com';
 
         let targetUrl = null;
         let authModal = null;
-        let logoutModal = null;
         let currentUser = null;
+        let isAdminUser = false;
+
+        // แปลงชื่อผู้ใช้ให้เป็นรูปแบบอีเมลเบื้องหลัง (รองรับทั้งบัญชีใหม่และบัญชีเก่าที่เคยสมัครด้วยอีเมล)
+        function toSystemEmail(rawInput) {
+            const clean = String(rawInput || '').trim().toLowerCase();
+            return clean.includes('@') ? clean : `${clean}@m4prep.com`;
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             const authModalElement = document.getElementById('authModal');
@@ -276,55 +411,104 @@
                 authModal = new bootstrap.Modal(authModalElement);
             }
 
-            const logoutModalElement = document.getElementById('logoutModal');
-            if (logoutModalElement) {
-                logoutModal = new bootstrap.Modal(logoutModalElement);
-            }
-
-            // ตรวจสอบเซสชันปัจจุบันเมื่อโหลดหน้าเว็บ
+            // ตรวจสอบเซสชันปัจจุบัน
             const { data: { session } } = await _supabase.auth.getSession();
-            if (session) {
+            if (session?.user) {
                 currentUser = session.user;
+                await syncUserRole(currentUser);
             }
             updateAuthUI();
 
+            // หากเปิดไฟล์นี้ในชื่อ login.html และยังไม่ล็อกอิน ให้เด้งกล่องล็อกอินขึ้นมาอัตโนมัติ
+            if (!currentUser && window.location.pathname.toLowerCase().includes('login.html') && authModal) {
+                document.getElementById('authModalNotice').classList.add('d-none');
+                authModal.show();
+            }
+
             // ติดตามการเปลี่ยนแปลงสถานะเข้าสู่ระบบ
-            _supabase.auth.onAuthStateChange((event, session) => {
+            _supabase.auth.onAuthStateChange(async (event, session) => {
                 currentUser = session ? session.user : null;
+                if (currentUser) {
+                    await syncUserRole(currentUser);
+                } else {
+                    isAdminUser = false;
+                }
                 updateAuthUI();
             });
 
-            // จัดการลิงก์จำกัดสิทธิ์ (ถ้ายังไม่ล็อกอิน ให้เด้ง Modal เข้าสู่ระบบเสมอ)
-            document.querySelectorAll('.restricted-link').forEach(link => {
-                link.addEventListener('click', function(e) {
+            // จัดการลิงก์เฉพาะสมาชิก (ทำข้อสอบ & วิเคราะห์คะแนน) -> บล็อก Guest
+            document.querySelectorAll('.member-only-link').forEach(link => {
+                link.addEventListener('click', function (e) {
                     if (!currentUser) {
                         e.preventDefault();
                         targetUrl = this.getAttribute('href');
-                        authModal.show();
+                        const feature = this.getAttribute('data-feature') || 'ฟีเจอร์นี้';
+                        const notice = document.getElementById('authModalNotice');
+                        if (notice) {
+                            notice.innerHTML = `<i class="fas fa-lock me-1"></i> กรุณาเข้าสู่ระบบหรือสร้างบัญชีเพื่อใช้งานส่วน <strong>"${escapeHtml(feature)}"</strong> (หากใช้โหมดทดลองเรียน จะเข้าอ่านได้เฉพาะสื่อการเรียนและสรุปเนื้อหา)`;
+                            notice.classList.remove('d-none');
+                        }
+                        if (authModal) authModal.show();
                     }
                 });
             });
         });
 
-        // อัปเดต UI ส่วนของปุ่มเข้าสู่ระบบ/ผู้ใช้งาน
+        async function syncUserRole(user) {
+            if (!user) return;
+            localStorage.setItem('user_email', user.email);
+
+            if (user.email === ADMIN_EMAIL || localStorage.getItem('user_role') === 'admin') {
+                isAdminUser = true;
+                localStorage.setItem('user_role', 'admin');
+                return;
+            }
+
+            try {
+                const { data: profile } = await _supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (profile?.role === 'admin') {
+                    isAdminUser = true;
+                    localStorage.setItem('user_role', 'admin');
+                } else {
+                    isAdminUser = false;
+                    localStorage.setItem('user_role', 'user');
+                }
+            } catch (_) {
+                isAdminUser = false;
+                localStorage.setItem('user_role', 'user');
+            }
+        }
+
         function updateAuthUI() {
             const container = document.getElementById('authNavContainer');
+            const lockIcons = document.querySelectorAll('.guest-lock-icon');
             if (!container) return;
 
             const isGuest = localStorage.getItem('user_role') === 'guest';
 
             if (currentUser) {
-                const isAdmin = currentUser.email === ADMIN_EMAIL;
-                const username = currentUser.email.split('@')[0];
+                lockIcons.forEach(el => el.classList.add('d-none'));
+                const username = escapeHtml(currentUser.email.split('@')[0]);
 
                 container.innerHTML = `
                     <div class="dropdown">
                         <button class="user-dropdown-btn dropdown-toggle mt-1" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle fs-5"></i>
+                            <i class="fas ${isAdminUser ? 'fa-user-shield text-danger' : 'fa-user-circle'} fs-5"></i>
                             <span>${username}</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2" aria-labelledby="userDropdown">
-                            ${isAdmin ? '<li><a class="dropdown-item fw-bold text-primary" href="admin.html"><i class="fas fa-user-shield me-2"></i>ระบบแอดมิน</a></li><li><hr class="dropdown-divider"></li>' : ''}
+                            <li>
+                                <a class="dropdown-item py-2" href="analytics.html">
+                                    <i class="fas fa-chart-pie text-primary me-2"></i>วิเคราะห์คะแนนของฉัน
+                                </a>
+                            </li>
+                            ${isAdminUser ? '<li><a class="dropdown-item fw-bold text-danger py-2" href="admin.html"><i class="fas fa-tools me-2"></i>ระบบจัดการ Admin</a></li>' : ''}
+                            <li><hr class="dropdown-divider"></li>
                             <li>
                                 <button class="dropdown-item text-danger py-2" data-bs-toggle="modal" data-bs-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ
@@ -334,25 +518,37 @@
                     </div>
                 `;
             } else if (isGuest) {
+                lockIcons.forEach(el => el.classList.remove('d-none'));
                 container.innerHTML = `
                     <div class="d-flex align-items-center gap-2 mt-1">
-                        <span class="badge bg-secondary rounded-pill px-3 py-2"><i class="fas fa-user-secret me-1"></i> Guest</span>
-                        <button class="btn btn-primary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#authModal">เข้าสู่ระบบ</button>
+                        <span class="badge bg-warning text-dark rounded-pill px-3 py-2">
+                            <i class="fas fa-book-reader me-1"></i> โหมดทดลองเรียน
+                        </span>
+                        <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openAuthModalClean()">เข้าสู่ระบบ</button>
                     </div>
                 `;
             } else {
+                lockIcons.forEach(el => el.classList.remove('d-none'));
                 container.innerHTML = `
-                    <button class="btn btn-primary btn-sm rounded-pill px-4 mt-1" data-bs-toggle="modal" data-bs-target="#authModal">
+                    <button class="btn btn-primary btn-sm rounded-pill px-4 mt-1" onclick="openAuthModalClean()">
                         เข้าสู่ระบบ / สมัครสมาชิก
                     </button>
                 `;
             }
         }
 
-        // 1. ฟังก์ชันล็อกอิน
+        function openAuthModalClean() {
+            targetUrl = null;
+            const notice = document.getElementById('authModalNotice');
+            if (notice) notice.classList.add('d-none');
+            if (authModal) authModal.show();
+        }
+
+        // 1. ฟังก์ชันล็อกอินด้วยชื่อผู้ใช้
         async function performLogin(event) {
             event.preventDefault();
-            const email = document.getElementById('loginEmail').value.trim();
+            const rawUser = document.getElementById('loginUsername').value;
+            const email = toSystemEmail(rawUser);
             const password = document.getElementById('loginPassword').value;
             const btnLogin = document.getElementById('btnLogin');
 
@@ -367,38 +563,40 @@
 
                 if (error) throw error;
 
-                localStorage.removeItem('user_role'); // ลบสถานะ guest หากมี
+                currentUser = data.user;
+                await syncUserRole(data.user);
 
-                if (data.user.email === ADMIN_EMAIL) {
-                    localStorage.setItem('user_role', 'admin');
-                    alert("เข้าสู่ระบบสำเร็จ! ยินดีต้อนรับแอดมิน");
+                if (authModal) authModal.hide();
+
+                if (isAdminUser) {
                     window.location.href = 'admin.html';
                 } else {
-                    localStorage.setItem('user_role', 'user');
-                    localStorage.setItem('user_email', data.user.email);
-                    alert("เข้าสู่ระบบสำเร็จ!");
-                    if (authModal) authModal.hide();
-                    
                     window.location.href = targetUrl || 'index.html';
                 }
-
             } catch (err) {
-                alert("เข้าสู่ระบบไม่สำเร็จ: " + (err.message || "อีเมลหรือรหัสผ่านไม่ถูกต้อง"));
+                alert("เข้าสู่ระบบไม่สำเร็จ: ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
             } finally {
                 btnLogin.disabled = false;
                 btnLogin.innerText = 'เข้าสู่ระบบ';
             }
         }
 
-        // 2. ฟังก์ชันสมัครสมาชิกใหม่สำหรับนักเรียน
+        // 2. ฟังก์ชันสร้างบัญชีใหม่ (ไม่ต้องใช้อีเมล และเข้าใช้งานได้ทันที)
         async function performRegister(event) {
             event.preventDefault();
-            const email = document.getElementById('regEmail').value.trim();
+            const rawUser = document.getElementById('regUsername').value.trim().toLowerCase();
             const password = document.getElementById('regPassword').value;
             const btnRegister = document.getElementById('btnRegister');
 
+            // ตรวจสอบรูปแบบชื่อผู้ใช้ให้เป็นภาษาอังกฤษหรือตัวเลข
+            if (!/^[a-z0-9._-]+$/.test(rawUser)) {
+                alert("ชื่อผู้ใช้ต้องเป็นภาษาอังกฤษ ตัวเลข หรือเครื่องหมาย _ - เท่านั้น (ห้ามมีเว้นวรรคหรือภาษาไทย)");
+                return;
+            }
+
+            const email = toSystemEmail(rawUser);
             btnRegister.disabled = true;
-            btnRegister.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>กำลังลงทะเบียน...';
+            btnRegister.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>กำลังสร้างบัญชี...';
 
             try {
                 const { data, error } = await _supabase.auth.signUp({
@@ -408,26 +606,45 @@
 
                 if (error) throw error;
 
-                alert("สมัครสมาชิกสำเร็จ! กรุณาล็อกอินเข้าใช้งาน");
-                document.getElementById('login-tab').click();
-                document.getElementById('loginEmail').value = email;
-
+                // หากปิด Confirm email ใน Supabase แล้ว จะได้รับ session และเข้าเรียนได้ทันที
+                if (data.session && data.user) {
+                    currentUser = data.user;
+                    await syncUserRole(data.user);
+                    if (authModal) authModal.hide();
+                    window.location.href = targetUrl || 'index.html';
+                } else {
+                    alert("สร้างบัญชีสำเร็จ! กรุณาเข้าสู่ระบบด้วยชื่อผู้ใช้ที่ตั้งไว้");
+                    document.getElementById('login-tab').click();
+                    document.getElementById('loginUsername').value = rawUser;
+                }
             } catch (err) {
-                alert("สมัครสมาชิกไม่สำเร็จ: " + err.message);
+                if (err.message && err.message.toLowerCase().includes('already registered')) {
+                    alert("ชื่อผู้ใช้นี้ถูกใช้งานแล้ว กรุณาตั้งชื่ออื่นครับ");
+                } else {
+                    alert("สร้างบัญชีไม่สำเร็จ: " + err.message);
+                }
             } finally {
                 btnRegister.disabled = false;
-                btnRegister.innerText = 'ยืนยันการสมัครสมาชิก';
+                btnRegister.innerText = 'สร้างบัญชีและเข้าใช้งานทันที';
             }
         }
 
-        // 3. เข้าใช้งานแบบ Guest
+        // 3. เข้าใช้งานแบบ Guest (อ่านได้เฉพาะสื่อการเรียนและสรุปเนื้อหา)
         function continueAsGuest() {
+            localStorage.removeItem('user_email');
             localStorage.setItem('user_role', 'guest');
             if (authModal) authModal.hide();
-            window.location.href = targetUrl || 'index.html';
+            updateAuthUI();
+
+            if (targetUrl && targetUrl.includes('mode=summary')) {
+                window.location.href = targetUrl;
+            } else if (window.location.pathname.toLowerCase().includes('login.html')) {
+                window.location.href = 'summary.html?mode=summary';
+            }
+            targetUrl = null;
         }
 
-        // 4. ออกจากระบบเมื่อกดยืนยันใน Modal
+        // 4. ออกจากระบบ
         async function performLogout() {
             try {
                 const modalElement = document.getElementById('logoutModal');
@@ -439,7 +656,7 @@
                 await _supabase.auth.signOut();
                 localStorage.removeItem('user_role');
                 localStorage.removeItem('user_email');
-                
+
                 window.location.href = 'index.html';
             } catch (err) {
                 console.error("Logout error:", err);
